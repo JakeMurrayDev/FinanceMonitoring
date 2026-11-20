@@ -9,7 +9,7 @@
       "source": "/api/:path*",
       "destination": "https://7nijjm6zhkczenzo3drd3bej7q0ockrs.lambda-url.ap-southeast-2.on.aws/api/:path*"
     },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|assets/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

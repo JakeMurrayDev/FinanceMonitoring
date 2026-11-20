@@ -4,7 +4,7 @@ A personal finance dashboard: track transactions, set monthly budgets, and see w
 
 **React 19 + TypeScript** on the front end, **ASP.NET Core (.NET 11)** on the back end, deployed to **Vercel** and **AWS Lambda**.
 
-**Live demo:** _https://REPLACE-ME.vercel.app_ · **API docs:** _https://REPLACE-ME.vercel.app/api/docs_
+**Live demo:** https://finance-monitoring-six.vercel.app · **API docs:** https://finance-monitoring-six.vercel.app/api/docs
 
 > The demo runs on sample data that resets from time to time, so feel free to add, edit and delete.
 
