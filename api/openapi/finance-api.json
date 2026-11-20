@@ -223,6 +223,97 @@
         }
       }
     },
+    "/api/dashboard": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Monthly totals, spending by category and a six-month trend, in any supported currency.",
+        "operationId": "GetDashboard",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "schema": {
+              "pattern": "^[A-Z]{3}$",
+              "type": "string",
+              "default": "USD"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetDashboardResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/currencies": {
+      "get": {
+        "tags": [
+          "Rates"
+        ],
+        "summary": "Currencies the dashboard can be displayed in.",
+        "operationId": "ListCurrencies",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListCurrenciesResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/transactions": {
       "post": {
         "tags": [
@@ -734,6 +825,180 @@
           }
         }
       },
+      "GetDashboardCategorySpend": {
+        "required": [
+          "categoryId",
+          "name",
+          "amount"
+        ],
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "description": "Category slug."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "amount": {
+            "type": "integer",
+            "description": "Expenses this month, in minor units of the response currency.",
+            "format": "int64"
+          }
+        }
+      },
+      "GetDashboardMonthTotals": {
+        "required": [
+          "income",
+          "expenses",
+          "net"
+        ],
+        "type": "object",
+        "properties": {
+          "income": {
+            "type": "integer",
+            "description": "Income, in minor units of the response currency.",
+            "format": "int64"
+          },
+          "expenses": {
+            "type": "integer",
+            "description": "Expenses, in minor units of the response currency.",
+            "format": "int64"
+          },
+          "net": {
+            "type": "integer",
+            "description": "Income minus expenses (converted from the exact USD net, not from the converted parts).",
+            "format": "int64"
+          }
+        }
+      },
+      "GetDashboardRateInfo": {
+        "required": [
+          "base",
+          "quote",
+          "rate",
+          "date",
+          "stale"
+        ],
+        "type": "object",
+        "properties": {
+          "base": {
+            "type": "string",
+            "description": "Converted from (USD)."
+          },
+          "quote": {
+            "type": "string",
+            "description": "Converted to."
+          },
+          "rate": {
+            "type": "string",
+            "description": "Units of quote per one base, as an exact decimal string (never a float)."
+          },
+          "date": {
+            "type": "string",
+            "description": "ECB publication date (yyyy-MM-dd)."
+          },
+          "stale": {
+            "type": "boolean",
+            "description": "True when the rate source was unreachable and this is the last good rate."
+          }
+        }
+      },
+      "GetDashboardResponse": {
+        "required": [
+          "month",
+          "currency",
+          "rate",
+          "totals",
+          "previous",
+          "savingsRateBasisPoints",
+          "byCategory",
+          "trend"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "The month summarised (yyyy-MM)."
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency of every amount in this response."
+          },
+          "rate": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The rate used, or null when no conversion was needed (USD).",
+                "$ref": "#/components/schemas/GetDashboardRateInfo"
+              }
+            ]
+          },
+          "totals": {
+            "description": "This month's income, expenses and net.",
+            "$ref": "#/components/schemas/GetDashboardMonthTotals"
+          },
+          "previous": {
+            "description": "The previous month's totals, for comparison.",
+            "$ref": "#/components/schemas/GetDashboardMonthTotals"
+          },
+          "savingsRateBasisPoints": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Net as a share of income in basis points (2345 = 23.45%); null with no income. Currency-independent.",
+            "format": "int32"
+          },
+          "byCategory": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetDashboardCategorySpend"
+            },
+            "description": "This month's expenses per category, largest first."
+          },
+          "trend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetDashboardTrendPoint"
+            },
+            "description": "Income, expenses and net for the six months ending this month, oldest first. Months with no activity are zero."
+          }
+        }
+      },
+      "GetDashboardTrendPoint": {
+        "required": [
+          "month",
+          "income",
+          "expenses",
+          "net"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "yyyy-MM."
+          },
+          "income": {
+            "type": "integer",
+            "description": "Minor units.",
+            "format": "int64"
+          },
+          "expenses": {
+            "type": "integer",
+            "description": "Minor units.",
+            "format": "int64"
+          },
+          "net": {
+            "type": "integer",
+            "description": "Minor units.",
+            "format": "int64"
+          }
+        }
+      },
       "HttpValidationProblemDetails": {
         "type": "object",
         "properties": {
@@ -809,6 +1074,38 @@
             "items": {
               "$ref": "#/components/schemas/ListCategoriesCategoryItem"
             }
+          }
+        }
+      },
+      "ListCurrenciesCurrencyItem": {
+        "required": [
+          "code",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "ISO 4217 code."
+          },
+          "name": {
+            "type": "string",
+            "description": "English name."
+          }
+        }
+      },
+      "ListCurrenciesResponse": {
+        "required": [
+          "currencies"
+        ],
+        "type": "object",
+        "properties": {
+          "currencies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListCurrenciesCurrencyItem"
+            },
+            "description": "Display currencies, by code. Always includes USD, the account currency."
           }
         }
       },
@@ -1056,6 +1353,12 @@
     },
     {
       "name": "Categories"
+    },
+    {
+      "name": "Dashboard"
+    },
+    {
+      "name": "Rates"
     },
     {
       "name": "Transactions"

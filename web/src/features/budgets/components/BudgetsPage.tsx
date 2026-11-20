@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { AlertCircle, RotateCw } from 'lucide-react'
 
+import { MonthNavigator } from '@/components/layout/MonthNavigator'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -13,7 +14,6 @@ import { useChangeBudget } from '../mutations'
 import { budgetsQueryOptions } from '../queries'
 import { BudgetCard } from './BudgetCard'
 import { BudgetSummary } from './BudgetSummary'
-import { MonthNavigator } from './MonthNavigator'
 
 const route = getRouteApi('/budgets')
 
@@ -29,7 +29,9 @@ export function BudgetsPage() {
         title="Budgets"
         description="Monthly spending limits for each expense category."
       />
-      <MonthNavigator month={month} />
+      <div className="mb-6">
+        <MonthNavigator month={month} to="/budgets" />
+      </div>
 
       {budgets.isPending ? (
         <div

@@ -56,6 +56,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Monthly totals, spending by category and a six-month trend, in any supported currency. */
+        get: operations["GetDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/currencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Currencies the dashboard can be displayed in. */
+        get: operations["ListCurrencies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/transactions": {
         parameters: {
             query?: never;
@@ -191,6 +225,85 @@ export interface components {
             /** @description Month totals. */
             totals: components["schemas"]["GetBudgetsBudgetTotals"];
         };
+        GetDashboardCategorySpend: {
+            /** @description Category slug. */
+            categoryId: string;
+            /** @description Display name. */
+            name: string;
+            /**
+             * Format: int64
+             * @description Expenses this month, in minor units of the response currency.
+             */
+            amount: number;
+        };
+        GetDashboardMonthTotals: {
+            /**
+             * Format: int64
+             * @description Income, in minor units of the response currency.
+             */
+            income: number;
+            /**
+             * Format: int64
+             * @description Expenses, in minor units of the response currency.
+             */
+            expenses: number;
+            /**
+             * Format: int64
+             * @description Income minus expenses (converted from the exact USD net, not from the converted parts).
+             */
+            net: number;
+        };
+        GetDashboardRateInfo: {
+            /** @description Converted from (USD). */
+            base: string;
+            /** @description Converted to. */
+            quote: string;
+            /** @description Units of quote per one base, as an exact decimal string (never a float). */
+            rate: string;
+            /** @description ECB publication date (yyyy-MM-dd). */
+            date: string;
+            /** @description True when the rate source was unreachable and this is the last good rate. */
+            stale: boolean;
+        };
+        GetDashboardResponse: {
+            /** @description The month summarised (yyyy-MM). */
+            month: string;
+            /** @description Currency of every amount in this response. */
+            currency: string;
+            rate: null | components["schemas"]["GetDashboardRateInfo"];
+            /** @description This month's income, expenses and net. */
+            totals: components["schemas"]["GetDashboardMonthTotals"];
+            /** @description The previous month's totals, for comparison. */
+            previous: components["schemas"]["GetDashboardMonthTotals"];
+            /**
+             * Format: int32
+             * @description Net as a share of income in basis points (2345 = 23.45%); null with no income. Currency-independent.
+             */
+            savingsRateBasisPoints: null | number;
+            /** @description This month's expenses per category, largest first. */
+            byCategory: components["schemas"]["GetDashboardCategorySpend"][];
+            /** @description Income, expenses and net for the six months ending this month, oldest first. Months with no activity are zero. */
+            trend: components["schemas"]["GetDashboardTrendPoint"][];
+        };
+        GetDashboardTrendPoint: {
+            /** @description yyyy-MM. */
+            month: string;
+            /**
+             * Format: int64
+             * @description Minor units.
+             */
+            income: number;
+            /**
+             * Format: int64
+             * @description Minor units.
+             */
+            expenses: number;
+            /**
+             * Format: int64
+             * @description Minor units.
+             */
+            net: number;
+        };
         HttpValidationProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -209,6 +322,16 @@ export interface components {
         };
         ListCategoriesResponse: {
             categories: components["schemas"]["ListCategoriesCategoryItem"][];
+        };
+        ListCurrenciesCurrencyItem: {
+            /** @description ISO 4217 code. */
+            code: string;
+            /** @description English name. */
+            name: string;
+        };
+        ListCurrenciesResponse: {
+            /** @description Display currencies, by code. Always includes USD, the account currency. */
+            currencies: components["schemas"]["ListCurrenciesCurrencyItem"][];
         };
         /** @enum {unknown} */
         ListTransactionsSortField: "Date" | "Amount" | "Description" | "Category";
@@ -333,9 +456,16 @@ export type SchemaCreateTransactionRequest = components['schemas']['CreateTransa
 export type SchemaGetBudgetsBudgetLine = components['schemas']['GetBudgetsBudgetLine'];
 export type SchemaGetBudgetsBudgetTotals = components['schemas']['GetBudgetsBudgetTotals'];
 export type SchemaGetBudgetsResponse = components['schemas']['GetBudgetsResponse'];
+export type SchemaGetDashboardCategorySpend = components['schemas']['GetDashboardCategorySpend'];
+export type SchemaGetDashboardMonthTotals = components['schemas']['GetDashboardMonthTotals'];
+export type SchemaGetDashboardRateInfo = components['schemas']['GetDashboardRateInfo'];
+export type SchemaGetDashboardResponse = components['schemas']['GetDashboardResponse'];
+export type SchemaGetDashboardTrendPoint = components['schemas']['GetDashboardTrendPoint'];
 export type SchemaHttpValidationProblemDetails = components['schemas']['HttpValidationProblemDetails'];
 export type SchemaListCategoriesCategoryItem = components['schemas']['ListCategoriesCategoryItem'];
 export type SchemaListCategoriesResponse = components['schemas']['ListCategoriesResponse'];
+export type SchemaListCurrenciesCurrencyItem = components['schemas']['ListCurrenciesCurrencyItem'];
+export type SchemaListCurrenciesResponse = components['schemas']['ListCurrenciesResponse'];
 export type SchemaListTransactionsSortField = components['schemas']['ListTransactionsSortField'];
 export type SchemaPagedResponseOfTransactionResponse = components['schemas']['PagedResponseOfTransactionResponse'];
 export type SchemaProblemDetails = components['schemas']['ProblemDetails'];
@@ -500,6 +630,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListCategoriesResponse"];
+                };
+            };
+        };
+    };
+    GetDashboard: {
+        parameters: {
+            query?: {
+                month?: string;
+                currency?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetDashboardResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListCurrencies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCurrenciesResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };

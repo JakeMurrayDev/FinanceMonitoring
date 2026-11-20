@@ -25,6 +25,7 @@ beforeAll(() => {
 })
 
 afterEach(() => {
+  localStorage.clear() // display-currency preference
   // Testing Library only auto-unmounts when Vitest `globals` is on; we import
   // `describe`/`it` explicitly instead, so unmount rendered trees here.
   cleanup()

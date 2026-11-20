@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Using Include="AwesomeAssertions" />
+    <Using Include="NSubstitute" />
     <Using Include="Xunit" />
   </ItemGroup>
 
@@ -16,6 +17,11 @@
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="NSubstitute.Analyzers.CSharp">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="xunit.v3" />
   </ItemGroup>
 

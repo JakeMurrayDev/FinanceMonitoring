@@ -1,4 +1,5 @@
 using FinanceMonitoring.Api.Data;
+using FinanceMonitoring.Api.Features.Rates;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -27,6 +28,12 @@ public sealed class FinanceApiFactory : WebApplicationFactory<Program>
 
     public FakeTimeProvider Clock { get; } = new(Now);
 
+    /// <summary>
+    /// Replaces the real rate service so tests never touch the network. Each
+    /// test arranges what it needs; unconfigured calls return null.
+    /// </summary>
+    public IExchangeRateService Rates { get; } = Substitute.For<IExchangeRateService>();
+
     public FinanceApiFactory()
     {
         _keepAlive = new SqliteConnection(_connectionString);
@@ -39,7 +46,11 @@ public sealed class FinanceApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:Finance", _connectionString);
         builder.UseSetting("Database:MigrateOnStartup", "true");
         builder.ConfigureLogging(logging => logging.ClearProviders()); // keep test output readable
-        builder.ConfigureTestServices(services => services.AddSingleton<TimeProvider>(Clock));
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddSingleton<TimeProvider>(Clock);
+            services.AddSingleton(Rates);
+        });
     }
 
     /// <summary>Insert rows directly, bypassing the API, to set up a known state.</summary>

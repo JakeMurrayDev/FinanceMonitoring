@@ -69,9 +69,7 @@ function Stat({
   return (
     <div className="rounded-lg border p-4">
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className={cn('mt-1 font-mono text-2xl font-semibold tabular-nums', className)}>
-        {value}
-      </dd>
+      <dd className={cn('mt-1 text-2xl font-semibold', className)}>{value}</dd>
       {hint && <dd className="text-xs text-muted-foreground">{hint}</dd>}
     </div>
   )

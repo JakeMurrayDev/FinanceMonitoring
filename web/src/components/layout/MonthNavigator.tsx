@@ -4,17 +4,17 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { addMonths, currentMonth, formatMonth } from '@/lib/months'
 
-export function MonthNavigator({ month }: { month: string }) {
+/** Previous / next month links for a page with `?month=` in its URL. */
+export function MonthNavigator({ month, to }: { month: string; to: '/' | '/budgets' }) {
   const previous = addMonths(month, -1)
   const next = addMonths(month, 1)
-  const thisMonth = currentMonth()
 
   return (
-    <nav aria-label="Month" className="mb-6 flex flex-wrap items-center gap-2">
+    <nav aria-label="Month" className="flex flex-wrap items-center gap-2">
       <Button asChild variant="outline" size="icon">
         <Link
-          to="/budgets"
-          search={{ month: previous }}
+          to={to}
+          search={(prev) => ({ ...prev, month: previous })}
           aria-label={`Previous month, ${formatMonth(previous)}`}
         >
           <ChevronLeft aria-hidden="true" />
@@ -25,16 +25,16 @@ export function MonthNavigator({ month }: { month: string }) {
       </p>
       <Button asChild variant="outline" size="icon">
         <Link
-          to="/budgets"
-          search={{ month: next }}
+          to={to}
+          search={(prev) => ({ ...prev, month: next })}
           aria-label={`Next month, ${formatMonth(next)}`}
         >
           <ChevronRight aria-hidden="true" />
         </Link>
       </Button>
-      {month !== thisMonth && (
+      {month !== currentMonth() && (
         <Button asChild variant="ghost" size="sm">
-          <Link to="/budgets" search={{}}>
+          <Link to={to} search={(prev) => ({ ...prev, month: undefined })}>
             Back to this month
           </Link>
         </Button>

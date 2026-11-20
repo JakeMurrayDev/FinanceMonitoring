@@ -3,6 +3,7 @@ import { http, HttpResponse } from 'msw'
 import type { TransactionItem } from '@/api/types'
 
 import { budgetDb } from './budgets'
+import { eurDashboard, mockCurrencies, usdDashboard } from './dashboard'
 import { mockCategories, pageOf } from './data'
 import { db } from './db'
 
@@ -55,6 +56,24 @@ export const handlers = [
     if (result === undefined) return notFound()
     if (result === 'conflict') return conflict()
     return HttpResponse.json(result)
+  }),
+
+  http.get('*/api/currencies', () => HttpResponse.json({ currencies: mockCurrencies })),
+
+  http.get('*/api/dashboard', ({ request }) => {
+    const query = new URL(request.url).searchParams
+    const month = query.get('month') ?? '2026-11'
+    const currency = query.get('currency') ?? 'USD'
+    if (currency === 'USD') return HttpResponse.json(usdDashboard(month))
+    if (currency === 'EUR') return HttpResponse.json(eurDashboard(month))
+    return HttpResponse.json(
+      {
+        title: 'One or more validation errors occurred.',
+        status: 400,
+        errors: { currency: [`${currency} isn't supported in tests.`] },
+      },
+      { status: 400 },
+    )
   }),
 
   http.get('*/api/budgets', ({ request }) => {

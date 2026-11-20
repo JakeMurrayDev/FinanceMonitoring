@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using FinanceMonitoring.Api.Common.Endpoints;
 using FinanceMonitoring.Api.Data;
 using FinanceMonitoring.Api.Data.Seeding;
+using FinanceMonitoring.Api.Features.Rates;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
@@ -58,6 +59,23 @@ builder.Services.AddDbContext<AppDbContext>((services, options) =>
 });
 
 builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>();
+
+// Exchange rates: typed HttpClient with timeouts, retries and a circuit
+// breaker; the service caches results and falls back to the last good rate.
+builder.Services
+    .AddHttpClient<IFrankfurterClient, FrankfurterClient>(client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["Frankfurter:BaseUrl"] ?? "https://api.frankfurter.dev/v1/");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("FinanceMonitor/1.0");
+    })
+    .AddStandardResilienceHandler(options =>
+    {
+        // Fail fast: the dashboard can always fall back to USD.
+        options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(3);
+        options.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(8);
+        options.CircuitBreaker.SamplingDuration = TimeSpan.FromSeconds(30);
+    });
+builder.Services.AddSingleton<IExchangeRateService, ExchangeRateService>();
 
 var app = builder.Build();
 

@@ -1,5 +1,11 @@
 // Friendly names for generated API types. Regenerate with `pnpm gen:api`.
 export type {
+  SchemaGetDashboardCategorySpend as CategorySpend,
+  SchemaGetDashboardMonthTotals as MonthTotals,
+  SchemaGetDashboardRateInfo as RateInfo,
+  SchemaGetDashboardResponse as Dashboard,
+  SchemaGetDashboardTrendPoint as TrendPoint,
+  SchemaListCurrenciesCurrencyItem as CurrencyItem,
   SchemaBudgetStatus as BudgetStatus,
   SchemaGetBudgetsBudgetLine as BudgetLine,
   SchemaGetBudgetsBudgetTotals as BudgetTotals,
