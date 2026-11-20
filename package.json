@@ -1,0 +1,21 @@
+{
+  "name": "finance-monitor",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently --names api,web --prefix-colors blue,magenta --kill-others-on-fail \"pnpm dev:api\" \"pnpm dev:web\"",
+    "dev:api": "dotnet watch --project api/src/FinanceMonitoring.Api --non-interactive",
+    "dev:web": "pnpm --filter web dev",
+    "test": "pnpm test:web && pnpm test:api",
+    "test:web": "pnpm --filter web test:run",
+    "test:api": "dotnet test api",
+    "check": "pnpm --filter web check && dotnet format api --verify-no-changes && pnpm test:api",
+    "build": "pnpm --filter web build && dotnet build api -c Release"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.7"
+  }
+}

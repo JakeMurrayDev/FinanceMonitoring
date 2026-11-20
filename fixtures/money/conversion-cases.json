@@ -1,0 +1,19 @@
+{
+  "description": "Currency conversion cases shared by web/src/lib/money (Vitest) and api/tests (xUnit). Amounts are integer minor units; rate = units of `to` per one unit of `from`; rounding is half-to-even. Both implementations must produce `expected` exactly.",
+  "cases": [
+    { "name": "same precision, rounds once at the end", "amount": 1999, "from": "USD", "rate": "0.92345", "to": "EUR", "expected": 1846 },
+    { "name": "exact tie rounds to even (down)", "amount": 10000, "from": "USD", "rate": "0.92345", "to": "EUR", "expected": 9234 },
+    { "name": "exact tie rounds to even (up)", "amount": 30000, "from": "USD", "rate": "0.92345", "to": "EUR", "expected": 27704 },
+    { "name": "float trap: 50 x 1.15 is exactly 57.5, floats say 57.4999...", "amount": 50, "from": "USD", "rate": "1.15", "to": "EUR", "expected": 58 },
+    { "name": "negative tie rounds symmetrically (down)", "amount": -10000, "from": "USD", "rate": "0.92345", "to": "EUR", "expected": -9234 },
+    { "name": "negative tie rounds symmetrically (up)", "amount": -30000, "from": "USD", "rate": "0.92345", "to": "EUR", "expected": -27704 },
+    { "name": "negative non-tie", "amount": -1999, "from": "USD", "rate": "0.92345", "to": "EUR", "expected": -1846 },
+    { "name": "2 decimals to 0 decimals (USD to JPY)", "amount": 1999, "from": "USD", "rate": "157.82", "to": "JPY", "expected": 3155 },
+    { "name": "0 decimals to 2 decimals (JPY to USD)", "amount": 1500, "from": "JPY", "rate": "0.006337", "to": "USD", "expected": 951 },
+    { "name": "2 decimals to 3 decimals (USD to KWD)", "amount": 10000, "from": "USD", "rate": "0.3075", "to": "KWD", "expected": 30750 },
+    { "name": "0 decimals to 3 decimals scales up with no division", "amount": 1000, "from": "JPY", "rate": "2", "to": "KWD", "expected": 2000000 },
+    { "name": "very small rate", "amount": 5000000000, "from": "USD", "rate": "0.0000001", "to": "EUR", "expected": 500 },
+    { "name": "rate of 1 leaves the amount unchanged", "amount": 1234, "from": "USD", "rate": "1", "to": "USD", "expected": 1234 },
+    { "name": "tiny amount can round to zero", "amount": 1, "from": "USD", "rate": "0.004", "to": "EUR", "expected": 0 }
+  ]
+}
