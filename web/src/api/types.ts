@@ -2,8 +2,8 @@
 export type {
   SchemaListCategoriesCategoryItem as Category,
   SchemaListTransactionsSortField as TransactionSortField,
-  SchemaListTransactionsTransactionItem as TransactionItem,
-  SchemaPagedResponseOfTransactionItem as TransactionPage,
+  SchemaPagedResponseOfTransactionResponse as TransactionPage,
   SchemaSortDirection as SortDirection,
+  SchemaTransactionResponse as TransactionItem,
   SchemaTransactionType as TransactionType,
 } from './schema.gen'

@@ -56,25 +56,6 @@ public static class ListTransactions
         }
     }
 
-    // ── Response ───────────────────────────────────────────────────────────
-    /// <param name="Id">Unique, time-ordered identifier.</param>
-    /// <param name="Date">Calendar date of the transaction (yyyy-MM-dd).</param>
-    /// <param name="Description">Payee or note.</param>
-    /// <param name="Amount">Positive integer minor units (cents). Direction is given by <paramref name="Type"/>.</param>
-    /// <param name="Currency">ISO 4217 code of <paramref name="Amount"/>.</param>
-    /// <param name="Type">Income or Expense.</param>
-    /// <param name="CategoryId">Category slug, usable in the <c>category</c> filter.</param>
-    /// <param name="CategoryName">Display name of the category.</param>
-    public sealed record TransactionItem(
-        Guid Id,
-        DateOnly Date,
-        string Description,
-        long Amount,
-        string Currency,
-        TransactionType Type,
-        string CategoryId,
-        string CategoryName);
-
     // ── Endpoint ───────────────────────────────────────────────────────────
     public sealed class Endpoint : IEndpoint
     {
@@ -85,7 +66,7 @@ public static class ListTransactions
                 .WithSummary("Search, filter, sort and page through transactions.")
                 .ProducesValidationProblem();
 
-        internal static async Task<Ok<PagedResponse<TransactionItem>>> HandleAsync(
+        internal static async Task<Ok<PagedResponse<TransactionResponse>>> HandleAsync(
             [AsParameters] Request request,
             AppDbContext db,
             CancellationToken cancellationToken)
@@ -93,8 +74,7 @@ public static class ListTransactions
             var query = Filter(db.Transactions.AsNoTracking(), request);
 
             var response = await Sort(query, request.Sort, request.Dir).ToPagedResponseAsync(
-                t => new TransactionItem(
-                    t.Id, t.Date, t.Description, t.Amount, t.Currency, t.Type, t.CategoryId, t.Category.Name),
+                TransactionResponse.Projection,
                 request.Page,
                 request.PageSize,
                 cancellationToken);

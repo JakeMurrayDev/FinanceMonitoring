@@ -1,7 +1,9 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
-import { AlertCircle, RotateCw } from 'lucide-react'
-import { useCallback } from 'react'
+import { getRouteApi, Link, Outlet } from '@tanstack/react-router'
+import { AlertCircle, Plus, RotateCw } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
+
+import type { TransactionItem } from '@/api/types'
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -9,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { categoriesQueryOptions } from '@/features/categories/queries'
 
+import { useDeleteTransaction, usePendingCreates } from '../mutations'
 import { transactionsQueryOptions } from '../queries'
 import {
   dateRangeError,
@@ -16,8 +19,10 @@ import {
   type TransactionFilters as Filters,
   type TransactionSearch,
 } from '../search-schema'
+import { DeleteTransactionDialog } from './DeleteTransactionDialog'
+import { RowActionsContext } from './row-actions-context'
 import { TransactionFilters } from './TransactionFilters'
-import { TransactionsTable } from './TransactionsTable'
+import { TransactionsTable, type PendingRow } from './TransactionsTable'
 
 // getRouteApi gives typed access to the route's search params without
 // importing the route file (which would create a circular import).
@@ -36,6 +41,16 @@ export function TransactionsPage() {
     placeholderData: keepPreviousData,
   })
   const categories = useQuery(categoriesQueryOptions())
+  const deleteTransaction = useDeleteTransaction()
+  const [toDelete, setToDelete] = useState<TransactionItem | null>(null)
+  const rowActions = useMemo(() => ({ onDelete: setToDelete }), [])
+
+  const pendingCreates = usePendingCreates()
+  const pendingRows: PendingRow[] = pendingCreates.map((values, index) => ({
+    ...values,
+    key: `pending-${String(index)}`,
+    categoryName: categories.data?.find((c) => c.id === values.categoryId)?.name ?? '…',
+  }))
 
   const updateSearch = useCallback(
     (patch: Partial<TransactionSearch>, options: { replace?: boolean } = {}) => {
@@ -73,6 +88,14 @@ export function TransactionsPage() {
       <PageHeader
         title="Transactions"
         description="Search, filter and sort your transaction history."
+        actions={
+          <Button asChild>
+            <Link to="/transactions/new" search={true}>
+              <Plus aria-hidden="true" />
+              Add transaction
+            </Link>
+          </Button>
+        }
       />
 
       <TransactionFilters
@@ -103,28 +126,45 @@ export function TransactionsPage() {
           </AlertDescription>
         </Alert>
       ) : (
-        <TransactionsTable
-          page={transactions.data}
-          search={search}
-          isStale={transactions.isPlaceholderData}
-          onSortChange={(sort, dir) => {
-            updateSearch({ sort, dir, page: 1 })
-          }}
-          onPaginationChange={(page, pageSize) => {
-            updateSearch({ page, pageSize })
-          }}
-          emptyState={
-            <EmptyState
-              filtersActive={filtersActive}
-              beyondLastPage={transactions.data.totalCount > 0}
-              onClearFilters={clearFilters}
-              onFirstPage={() => {
-                updateSearch({ page: 1 })
-              }}
-            />
-          }
-        />
+        <RowActionsContext value={rowActions}>
+          <TransactionsTable
+            page={transactions.data}
+            pendingRows={pendingRows}
+            search={search}
+            isStale={transactions.isPlaceholderData}
+            onSortChange={(sort, dir) => {
+              updateSearch({ sort, dir, page: 1 })
+            }}
+            onPaginationChange={(page, pageSize) => {
+              updateSearch({ page, pageSize })
+            }}
+            emptyState={
+              <EmptyState
+                filtersActive={filtersActive}
+                beyondLastPage={transactions.data.totalCount > 0}
+                onClearFilters={clearFilters}
+                onFirstPage={() => {
+                  updateSearch({ page: 1 })
+                }}
+              />
+            }
+          />
+        </RowActionsContext>
       )}
+
+      <DeleteTransactionDialog
+        transaction={toDelete}
+        onCancel={() => {
+          setToDelete(null)
+        }}
+        onConfirm={(transaction) => {
+          deleteTransaction.mutate(transaction)
+          setToDelete(null)
+        }}
+      />
+
+      {/* Add/edit dialogs render here, over the list. */}
+      <Outlet />
     </>
   )
 }

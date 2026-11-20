@@ -20,6 +20,7 @@ internal sealed class TransactionConfiguration : IEntityTypeConfiguration<Transa
         builder.Property(t => t.Description).HasMaxLength(200).IsRequired();
         builder.Property(t => t.Currency).HasMaxLength(3).IsFixedLength().IsRequired();
         builder.Property(t => t.Type).HasConversion<string>().HasMaxLength(16);
+        builder.Property(t => t.Version).IsConcurrencyToken().HasDefaultValue(1L);
 
         builder.HasOne(t => t.Category)
             .WithMany()

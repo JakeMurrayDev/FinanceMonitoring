@@ -2,9 +2,11 @@ using FinanceMonitoring.Api.Data;
 using FinanceMonitoring.Api.Domain.Transactions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Time.Testing;
 
 namespace FinanceMonitoring.Api.Tests.Infrastructure;
 
@@ -21,6 +23,11 @@ public sealed class FinanceApiFactory : WebApplicationFactory<Program>
 
     private readonly SqliteConnection _keepAlive;
 
+    /// <summary>"Now" for every test: 2026-11-20 12:00 UTC. Never the real clock.</summary>
+    public static readonly DateTimeOffset Now = new(2026, 11, 20, 12, 0, 0, TimeSpan.Zero);
+
+    public FakeTimeProvider Clock { get; } = new(Now);
+
     public FinanceApiFactory()
     {
         _keepAlive = new SqliteConnection(_connectionString);
@@ -33,6 +40,7 @@ public sealed class FinanceApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:Finance", _connectionString);
         builder.UseSetting("Database:MigrateOnStartup", "true");
         builder.ConfigureLogging(logging => logging.ClearProviders()); // keep test output readable
+        builder.ConfigureTestServices(services => services.AddSingleton<TimeProvider>(Clock));
     }
 
     /// <summary>Insert rows directly, bypassing the API, to set up a known state.</summary>

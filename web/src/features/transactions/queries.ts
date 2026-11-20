@@ -8,6 +8,10 @@ export const transactionKeys = {
   all: ['transactions'] as const,
   lists: () => [...transactionKeys.all, 'list'] as const,
   list: (search: TransactionSearch) => [...transactionKeys.lists(), search] as const,
+  details: () => [...transactionKeys.all, 'detail'] as const,
+  detail: (id: string) => [...transactionKeys.details(), id] as const,
+  /** Mutation key for creates, so the table can show pending ones. */
+  create: () => [...transactionKeys.all, 'create'] as const,
 }
 
 /**
@@ -20,5 +24,13 @@ export function transactionsQueryOptions(search: TransactionSearch) {
     queryKey: transactionKeys.list(search),
     queryFn: async ({ signal }) =>
       unwrap(await api.GET('/api/transactions', { params: { query: search }, signal })),
+  })
+}
+
+export function transactionQueryOptions(id: string) {
+  return queryOptions({
+    queryKey: transactionKeys.detail(id),
+    queryFn: async ({ signal }) =>
+      unwrap(await api.GET('/api/transactions/{id}', { params: { path: { id } }, signal })),
   })
 }

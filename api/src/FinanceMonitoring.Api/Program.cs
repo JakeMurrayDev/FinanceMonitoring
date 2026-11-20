@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using FinanceMonitoring.Api.Common.Endpoints;
 using FinanceMonitoring.Api.Data;
@@ -8,7 +9,19 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options =>
+    // Validation error keys match the JSON field names ("amount", not "Amount"),
+    // so clients can map each error straight onto its form field.
+    options.CustomizeProblemDetails = context =>
+    {
+        if (context.ProblemDetails is HttpValidationProblemDetails validation)
+        {
+            var camelCased = validation.Errors.ToDictionary(
+                pair => JsonNamingPolicy.CamelCase.ConvertName(pair.Key), pair => pair.Value);
+            validation.Errors.Clear();
+            foreach (var (key, messages) in camelCased) validation.Errors[key] = messages;
+        }
+    });
 
 // Validates DataAnnotations / IValidatableObject on endpoint parameters and
 // returns a 400 ValidationProblem before the handler runs.

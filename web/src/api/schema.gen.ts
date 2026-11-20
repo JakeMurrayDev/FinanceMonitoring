@@ -31,8 +31,28 @@ export interface paths {
         /** Search, filter, sort and page through transactions. */
         get: operations["ListTransactions"];
         put?: never;
-        post?: never;
+        /** Record a new transaction. */
+        post: operations["CreateTransaction"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transactions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one transaction. */
+        get: operations["GetTransaction"];
+        /** Replace a transaction. Requires the current version. */
+        put: operations["UpdateTransaction"];
+        post?: never;
+        /** Delete a transaction. Requires the current version. */
+        delete: operations["DeleteTransaction"];
         options?: never;
         head?: never;
         patch?: never;
@@ -42,6 +62,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        CreateTransactionRequest: {
+            /**
+             * Format: date
+             * @description Calendar date (yyyy-MM-dd). Not in the future.
+             */
+            date: string;
+            /** @description Payee or note, 1–200 characters. */
+            description: string;
+            /**
+             * Format: int64
+             * @description Positive integer minor units (cents). Never a decimal.
+             */
+            amount: number;
+            /** @description ISO 4217 code. Only USD is supported for now. */
+            currency: string;
+            /** @description Income or Expense. */
+            type: components["schemas"]["TransactionType"];
+            /** @description A category whose type matches Type. */
+            categoryId: string;
+        };
         HttpValidationProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -63,7 +103,43 @@ export interface components {
         };
         /** @enum {unknown} */
         ListTransactionsSortField: "Date" | "Amount" | "Description" | "Category";
-        ListTransactionsTransactionItem: {
+        /** @description Standard envelope for any paginated list endpoint. */
+        PagedResponseOfTransactionResponse: {
+            /** @description The rows on this page. */
+            items: components["schemas"]["TransactionResponse"][];
+            /**
+             * Format: int32
+             * @description 1-based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description Requested rows per page.
+             */
+            pageSize: number;
+            /**
+             * Format: int32
+             * @description Rows matching the filters, across all pages.
+             */
+            totalCount: number;
+            /**
+             * Format: int32
+             * @description Number of pages at this page size (0 when nothing matches).
+             */
+            totalPages: number;
+        };
+        ProblemDetails: {
+            type?: null | string;
+            title?: null | string;
+            /** Format: int32 */
+            status?: null | number;
+            detail?: null | string;
+            instance?: null | string;
+        };
+        /** @enum {unknown} */
+        SortDirection: "Asc" | "Desc";
+        /** @description A transaction as returned by every transactions endpoint. */
+        TransactionResponse: {
             /**
              * Format: uuid
              * @description Unique, time-ordered identifier.
@@ -89,36 +165,39 @@ export interface components {
             categoryId: string;
             /** @description Display name of the category. */
             categoryName: string;
+            /**
+             * Format: int64
+             * @description Concurrency token. Send it back when updating or deleting.
+             */
+            version: number;
         };
-        /** @description Standard envelope for any paginated list endpoint. */
-        PagedResponseOfTransactionItem: {
-            /** @description The rows on this page. */
-            items: components["schemas"]["ListTransactionsTransactionItem"][];
-            /**
-             * Format: int32
-             * @description 1-based page number.
-             */
-            page: number;
-            /**
-             * Format: int32
-             * @description Requested rows per page.
-             */
-            pageSize: number;
-            /**
-             * Format: int32
-             * @description Rows matching the filters, across all pages.
-             */
-            totalCount: number;
-            /**
-             * Format: int32
-             * @description Number of pages at this page size (0 when nothing matches).
-             */
-            totalPages: number;
-        };
-        /** @enum {unknown} */
-        SortDirection: "Asc" | "Desc";
         /** @enum {unknown} */
         TransactionType: "Income" | "Expense";
+        UpdateTransactionRequest: {
+            /**
+             * Format: date
+             * @description Calendar date (yyyy-MM-dd). Not in the future.
+             */
+            date: string;
+            /** @description Payee or note, 1–200 characters. */
+            description: string;
+            /**
+             * Format: int64
+             * @description Positive integer minor units (cents). Never a decimal.
+             */
+            amount: number;
+            /** @description ISO 4217 code. Only USD is supported for now. */
+            currency: string;
+            /** @description Income or Expense. */
+            type: components["schemas"]["TransactionType"];
+            /** @description A category whose type matches Type. */
+            categoryId: string;
+            /**
+             * Format: int64
+             * @description The version you last read. A mismatch means someone else changed it: 409.
+             */
+            version: number;
+        };
     };
     responses: never;
     parameters: never;
@@ -126,14 +205,17 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type SchemaCreateTransactionRequest = components['schemas']['CreateTransactionRequest'];
 export type SchemaHttpValidationProblemDetails = components['schemas']['HttpValidationProblemDetails'];
 export type SchemaListCategoriesCategoryItem = components['schemas']['ListCategoriesCategoryItem'];
 export type SchemaListCategoriesResponse = components['schemas']['ListCategoriesResponse'];
 export type SchemaListTransactionsSortField = components['schemas']['ListTransactionsSortField'];
-export type SchemaListTransactionsTransactionItem = components['schemas']['ListTransactionsTransactionItem'];
-export type SchemaPagedResponseOfTransactionItem = components['schemas']['PagedResponseOfTransactionItem'];
+export type SchemaPagedResponseOfTransactionResponse = components['schemas']['PagedResponseOfTransactionResponse'];
+export type SchemaProblemDetails = components['schemas']['ProblemDetails'];
 export type SchemaSortDirection = components['schemas']['SortDirection'];
+export type SchemaTransactionResponse = components['schemas']['TransactionResponse'];
 export type SchemaTransactionType = components['schemas']['TransactionType'];
+export type SchemaUpdateTransactionRequest = components['schemas']['UpdateTransactionRequest'];
 export type $defs = Record<string, never>;
 export interface operations {
     ListCategories: {
@@ -183,7 +265,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PagedResponseOfTransactionItem"];
+                    "application/json": components["schemas"]["PagedResponseOfTransactionResponse"];
                 };
             };
             /** @description Bad Request */
@@ -193,6 +275,163 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTransactionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
+    GetTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTransactionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeleteTransaction: {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };

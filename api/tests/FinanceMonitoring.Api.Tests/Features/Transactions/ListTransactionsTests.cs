@@ -2,9 +2,9 @@ using System.Net;
 using System.Net.Http.Json;
 using FinanceMonitoring.Api.Common.Paging;
 using FinanceMonitoring.Api.Domain;
+using FinanceMonitoring.Api.Features.Transactions;
 using FinanceMonitoring.Api.Tests.Infrastructure;
 using Microsoft.AspNetCore.Mvc;
-using static FinanceMonitoring.Api.Features.Transactions.ListTransactions;
 
 namespace FinanceMonitoring.Api.Tests.Features.Transactions;
 
@@ -153,10 +153,10 @@ public sealed class ListTransactionsTests(ListTransactionsFixture fixture) : ICl
     // ── Validation ─────────────────────────────────────────────────────────
 
     [Theory]
-    [InlineData("?pageSize=0", "PageSize")]
-    [InlineData("?pageSize=101", "PageSize")]
-    [InlineData("?page=0", "Page")]
-    [InlineData("?from=2026-03-01&to=2026-02-01", "From")]
+    [InlineData("?pageSize=0", "pageSize")]
+    [InlineData("?pageSize=101", "pageSize")]
+    [InlineData("?page=0", "page")]
+    [InlineData("?from=2026-03-01&to=2026-02-01", "from")]
     public async Task Rejects_invalid_queries_with_validation_problem_details(string query, string field)
     {
         var ct = TestContext.Current.CancellationToken;
@@ -181,9 +181,9 @@ public sealed class ListTransactionsTests(ListTransactionsFixture fixture) : ICl
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    private async Task<PagedResponse<TransactionItem>> GetAsync(string query)
+    private async Task<PagedResponse<TransactionResponse>> GetAsync(string query)
     {
-        var page = await _client.GetFromJsonAsync<PagedResponse<TransactionItem>>(
+        var page = await _client.GetFromJsonAsync<PagedResponse<TransactionResponse>>(
             new Uri($"/api/transactions{query}", UriKind.Relative),
             TestJson.Options,
             TestContext.Current.CancellationToken);

@@ -37,3 +37,14 @@ export function unwrap<T>(result: { data?: T; error?: unknown; response: Respons
   }
   return result.data
 }
+
+/** For endpoints with no response body (e.g. 204): throw unless the response succeeded. */
+export function ensureOk(result: { error?: unknown; response: Response }): void {
+  if (!result.response.ok) {
+    throw new ApiError(result.response.status, result.error as ProblemDetails | undefined)
+  }
+}
+
+export function isApiError(error: unknown, status?: number): error is ApiError {
+  return error instanceof ApiError && (status === undefined || error.status === status)
+}

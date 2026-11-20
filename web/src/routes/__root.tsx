@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { createRootRouteWithContext, HeadContent, Link, Outlet } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import { Toaster } from 'sonner'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -23,6 +24,8 @@ function RootLayout() {
       <AppShell>
         <Outlet />
       </AppShell>
+      {/* Toasts are announced to screen readers via an aria-live region. */}
+      <Toaster position="bottom-center" richColors closeButton />
       <TanStackRouterDevtools position="bottom-right" />
     </>
   )

@@ -36,6 +36,45 @@
       }
     },
     "/api/transactions": {
+      "post": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Record a new transaction.",
+        "operationId": "CreateTransaction",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTransactionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": [
           "Transactions"
@@ -130,7 +169,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PagedResponseOfTransactionItem"
+                  "$ref": "#/components/schemas/PagedResponseOfTransactionResponse"
                 }
               }
             }
@@ -147,10 +186,219 @@
           }
         }
       }
+    },
+    "/api/transactions/{id}": {
+      "delete": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Delete a transaction. Requires the current version.",
+        "operationId": "DeleteTransaction",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Get one transaction.",
+        "operationId": "GetTransaction",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Transactions"
+        ],
+        "summary": "Replace a transaction. Requires the current version.",
+        "operationId": "UpdateTransaction",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTransactionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransactionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "CreateTransactionRequest": {
+        "required": [
+          "date",
+          "description",
+          "amount",
+          "currency",
+          "type",
+          "categoryId"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Calendar date (yyyy-MM-dd). Not in the future.",
+            "format": "date"
+          },
+          "description": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string",
+            "description": "Payee or note, 1–200 characters."
+          },
+          "amount": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer",
+            "description": "Positive integer minor units (cents). Never a decimal.",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 code. Only USD is supported for now."
+          },
+          "type": {
+            "description": "Income or Expense.",
+            "$ref": "#/components/schemas/TransactionType"
+          },
+          "categoryId": {
+            "maxLength": 32,
+            "minLength": 0,
+            "type": "string",
+            "description": "A category whose type matches Type."
+          }
+        }
+      },
       "HttpValidationProblemDetails": {
         "type": "object",
         "properties": {
@@ -237,7 +485,89 @@
           "Category"
         ]
       },
-      "ListTransactionsTransactionItem": {
+      "PagedResponseOfTransactionResponse": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "totalCount",
+          "totalPages"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionResponse"
+            },
+            "description": "The rows on this page."
+          },
+          "page": {
+            "type": "integer",
+            "description": "1-based page number.",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Requested rows per page.",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "description": "Rows matching the filters, across all pages.",
+            "format": "int32"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "Number of pages at this page size (0 when nothing matches).",
+            "format": "int32"
+          }
+        },
+        "description": "Standard envelope for any paginated list endpoint."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SortDirection": {
+        "enum": [
+          "Asc",
+          "Desc"
+        ]
+      },
+      "TransactionResponse": {
         "required": [
           "id",
           "date",
@@ -246,7 +576,8 @@
           "currency",
           "type",
           "categoryId",
-          "categoryName"
+          "categoryName",
+          "version"
         ],
         "type": "object",
         "properties": {
@@ -284,60 +615,73 @@
           "categoryName": {
             "type": "string",
             "description": "Display name of the category."
-          }
-        }
-      },
-      "PagedResponseOfTransactionItem": {
-        "required": [
-          "items",
-          "page",
-          "pageSize",
-          "totalCount",
-          "totalPages"
-        ],
-        "type": "object",
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ListTransactionsTransactionItem"
-            },
-            "description": "The rows on this page."
           },
-          "page": {
+          "version": {
             "type": "integer",
-            "description": "1-based page number.",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "description": "Requested rows per page.",
-            "format": "int32"
-          },
-          "totalCount": {
-            "type": "integer",
-            "description": "Rows matching the filters, across all pages.",
-            "format": "int32"
-          },
-          "totalPages": {
-            "type": "integer",
-            "description": "Number of pages at this page size (0 when nothing matches).",
-            "format": "int32"
+            "description": "Concurrency token. Send it back when updating or deleting.",
+            "format": "int64"
           }
         },
-        "description": "Standard envelope for any paginated list endpoint."
-      },
-      "SortDirection": {
-        "enum": [
-          "Asc",
-          "Desc"
-        ]
+        "description": "A transaction as returned by every transactions endpoint."
       },
       "TransactionType": {
         "enum": [
           "Income",
           "Expense"
         ]
+      },
+      "UpdateTransactionRequest": {
+        "required": [
+          "date",
+          "description",
+          "amount",
+          "currency",
+          "type",
+          "categoryId",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Calendar date (yyyy-MM-dd). Not in the future.",
+            "format": "date"
+          },
+          "description": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string",
+            "description": "Payee or note, 1–200 characters."
+          },
+          "amount": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer",
+            "description": "Positive integer minor units (cents). Never a decimal.",
+            "format": "int64"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 code. Only USD is supported for now."
+          },
+          "type": {
+            "description": "Income or Expense.",
+            "$ref": "#/components/schemas/TransactionType"
+          },
+          "categoryId": {
+            "maxLength": 32,
+            "minLength": 0,
+            "type": "string",
+            "description": "A category whose type matches Type."
+          },
+          "version": {
+            "maximum": 9223372036854776000,
+            "minimum": 1,
+            "type": "integer",
+            "description": "The version you last read. A mismatch means someone else changed it: 409.",
+            "format": "int64"
+          }
+        }
       }
     }
   },

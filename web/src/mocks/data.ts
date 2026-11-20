@@ -18,6 +18,7 @@ export const mockTransactions: TransactionItem[] = [
     type: 'Expense',
     categoryId: 'dining',
     categoryName: 'Dining Out',
+    version: 1,
   },
   {
     id: '01935a3c-0000-7000-8000-000000000002',
@@ -28,6 +29,7 @@ export const mockTransactions: TransactionItem[] = [
     type: 'Income',
     categoryId: 'salary',
     categoryName: 'Salary',
+    version: 1,
   },
   {
     id: '01935a3c-0000-7000-8000-000000000003',
@@ -38,6 +40,7 @@ export const mockTransactions: TransactionItem[] = [
     type: 'Expense',
     categoryId: 'rent',
     categoryName: 'Rent',
+    version: 3,
   },
 ]
 

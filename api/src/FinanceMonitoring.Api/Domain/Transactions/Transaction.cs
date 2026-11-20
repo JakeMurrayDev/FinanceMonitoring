@@ -30,6 +30,13 @@ public sealed class Transaction
 
     public Category Category { get; set; } = null!;
 
+    /// <summary>
+    /// Optimistic concurrency token. Incremented on every change; an update or
+    /// delete must quote the version it read, or it's rejected with 409 rather
+    /// than silently overwriting someone else's change.
+    /// </summary>
+    public long Version { get; set; } = 1;
+
     public DateTimeOffset CreatedAt { get; init; }
 
     public DateTimeOffset UpdatedAt { get; set; }

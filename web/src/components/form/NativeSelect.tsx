@@ -16,6 +16,8 @@ export function NativeSelect({ className, children, ...props }: ComponentProps<'
           'h-9 w-full appearance-none rounded-md border border-input bg-background py-1 pr-8 pl-3 text-sm shadow-xs',
           'outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50',
           'disabled:cursor-not-allowed disabled:opacity-50',
+          // Match shadcn's Input: an invalid field gets a red border, not just a message.
+          'aria-invalid:border-destructive aria-invalid:ring-destructive/20',
           className,
         )}
         {...props}

@@ -9,7 +9,7 @@ import {
   type ReactTable,
   type SortingState,
 } from '@tanstack/react-table'
-import { ArrowDown, ArrowDownLeft, ArrowUp, ArrowUpDown, ArrowUpRight } from 'lucide-react'
+import { ArrowDown, ArrowDownLeft, ArrowUp, ArrowUpDown, ArrowUpRight, Loader2 } from 'lucide-react'
 
 import type { TransactionItem, TransactionPage } from '@/api/types'
 import { Badge } from '@/components/ui/badge'
@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils'
 
 import { formatSignedAmount } from '../format'
 import { SORT_FIELDS, type TransactionSearch } from '../search-schema'
+import { RowActions } from './RowActions'
 import { TablePagination } from './TablePagination'
 
 // Module scope: features and columns must be stable across renders.
@@ -72,12 +73,17 @@ const columns = helper.columns([
       </span>
     ),
   }),
+  helper.display({
+    id: 'actions',
+    header: () => <span className="sr-only">Actions</span>,
+    cell: (info) => <RowActions item={info.row.original} />,
+  }),
 ])
 
 const EMPTY_ROWS: TransactionItem[] = []
 
 /** Numeric columns are right-aligned so digits line up. */
-const RIGHT_ALIGNED = new Set(['Amount'])
+const RIGHT_ALIGNED = new Set(['Amount', 'actions'])
 
 interface TransactionsTableProps {
   page: TransactionPage | undefined
@@ -88,6 +94,17 @@ interface TransactionsTableProps {
   onPaginationChange: (page: number, pageSize: number) => void
   /** Rendered in place of rows when the table has nothing to show. */
   emptyState?: React.ReactNode
+  /** Creates in flight, shown at the top until the server confirms them. */
+  pendingRows?: readonly PendingRow[]
+}
+
+export interface PendingRow {
+  key: string
+  date: string
+  description: string
+  categoryName: string
+  type: TransactionItem['type']
+  amount: number
 }
 
 export function TransactionsTable({
@@ -97,6 +114,7 @@ export function TransactionsTable({
   onSortChange,
   onPaginationChange,
   emptyState,
+  pendingRows = [],
 }: TransactionsTableProps) {
   const sorting: SortingState = [{ id: search.sort, desc: search.dir === 'Desc' }]
   const pagination: PaginationState = { pageIndex: search.page - 1, pageSize: search.pageSize }
@@ -178,7 +196,32 @@ export function TransactionsTable({
             ))}
           </TableHeader>
           <TableBody className={cn('transition-opacity', isStale && 'opacity-60')}>
-            {rows.length === 0 ? (
+            {pendingRows.map((row) => (
+              <TableRow
+                key={row.key}
+                aria-busy="true"
+                className="bg-muted/50 text-muted-foreground"
+              >
+                <TableCell className="whitespace-nowrap">{formatIsoDate(row.date)}</TableCell>
+                <TableCell className="font-medium">{row.description}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{row.categoryName}</Badge>
+                </TableCell>
+                <TableCell>
+                  <TypeLabel type={row.type} />
+                </TableCell>
+                <TableCell className="text-right font-mono whitespace-nowrap tabular-nums">
+                  {formatSignedAmount({ ...row, currency: 'USD' })}
+                </TableCell>
+                <TableCell className="text-right text-xs whitespace-nowrap">
+                  <span className="inline-flex items-center gap-1">
+                    <Loader2 aria-hidden="true" className="size-3 animate-spin" />
+                    Saving…
+                  </span>
+                </TableCell>
+              </TableRow>
+            ))}
+            {rows.length === 0 && pendingRows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} className="h-40 text-center">
                   {emptyState}

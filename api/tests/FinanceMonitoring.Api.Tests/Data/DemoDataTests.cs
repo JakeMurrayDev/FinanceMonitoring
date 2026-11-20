@@ -76,7 +76,7 @@ public sealed class DemoDataTests
         });
         using var client = factory.CreateClient();
 
-        var page = await client.GetFromJsonAsync<PagedResponse<ListTransactions.TransactionItem>>(
+        var page = await client.GetFromJsonAsync<PagedResponse<TransactionResponse>>(
             new Uri("/api/transactions?pageSize=1", UriKind.Relative), TestJson.Options, ct);
 
         page!.TotalCount.Should().Be(_transactions.Count);
