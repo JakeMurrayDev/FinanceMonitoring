@@ -5,6 +5,194 @@
     "version": "1.0.0"
   },
   "paths": {
+    "/api/budgets/{categoryId}": {
+      "delete": {
+        "tags": [
+          "Budgets"
+        ],
+        "summary": "Clear a category's budget from a month onward. Returns the updated line.",
+        "operationId": "ClearBudget",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "type": "string"
+            }
+          },
+          {
+            "name": "version",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBudgetsBudgetLine"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Budgets"
+        ],
+        "summary": "Set a category's monthly budget from a month onward.",
+        "operationId": "SetBudget",
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetBudgetRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBudgetsBudgetLine"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/budgets": {
+      "get": {
+        "tags": [
+          "Budgets"
+        ],
+        "summary": "Budgets, spending and status for every expense category in a month.",
+        "operationId": "GetBudgets",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "schema": {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetBudgetsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/categories": {
       "get": {
         "tags": [
@@ -354,6 +542,14 @@
   },
   "components": {
     "schemas": {
+      "BudgetStatus": {
+        "enum": [
+          "NoBudget",
+          "OnTrack",
+          "NearLimit",
+          "OverBudget"
+        ]
+      },
       "CreateTransactionRequest": {
         "required": [
           "date",
@@ -396,6 +592,145 @@
             "minLength": 0,
             "type": "string",
             "description": "A category whose type matches Type."
+          }
+        }
+      },
+      "GetBudgetsBudgetLine": {
+        "required": [
+          "categoryId",
+          "categoryName",
+          "budget",
+          "budgetEffectiveFrom",
+          "spent",
+          "remaining",
+          "percentUsed",
+          "status",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string",
+            "description": "Expense category slug."
+          },
+          "categoryName": {
+            "type": "string",
+            "description": "Display name."
+          },
+          "budget": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Limit for this month in minor units, or null if none applies.",
+            "format": "int64"
+          },
+          "budgetEffectiveFrom": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The month (yyyy-MM) the applicable budget row started; null if there has never been one."
+          },
+          "spent": {
+            "type": "integer",
+            "description": "Expenses in this category this month, in minor units.",
+            "format": "int64"
+          },
+          "remaining": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Budget minus spent (negative when over), or null with no budget.",
+            "format": "int64"
+          },
+          "percentUsed": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Whole percent of the budget spent, rounded down; null with no budget.",
+            "format": "int32"
+          },
+          "status": {
+            "description": "How spending compares with the budget.",
+            "$ref": "#/components/schemas/BudgetStatus"
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Version of the row that starts this month, if any. Send it when changing this month's budget; null means the budget is inherited.",
+            "format": "int64"
+          }
+        }
+      },
+      "GetBudgetsBudgetTotals": {
+        "required": [
+          "budgeted",
+          "spentInBudgeted",
+          "remaining",
+          "unbudgeted",
+          "overBudgetCount"
+        ],
+        "type": "object",
+        "properties": {
+          "budgeted": {
+            "type": "integer",
+            "description": "Sum of all budgets this month.",
+            "format": "int64"
+          },
+          "spentInBudgeted": {
+            "type": "integer",
+            "description": "Spending in categories that have a budget.",
+            "format": "int64"
+          },
+          "remaining": {
+            "type": "integer",
+            "description": "Budgeted minus spent in budgeted categories.",
+            "format": "int64"
+          },
+          "unbudgeted": {
+            "type": "integer",
+            "description": "Spending in categories with no budget.",
+            "format": "int64"
+          },
+          "overBudgetCount": {
+            "type": "integer",
+            "description": "Number of categories over budget.",
+            "format": "int32"
+          }
+        }
+      },
+      "GetBudgetsResponse": {
+        "required": [
+          "month",
+          "currency",
+          "lines",
+          "totals"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "The month reported on (yyyy-MM)."
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 code of every amount."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GetBudgetsBudgetLine"
+            },
+            "description": "One line per expense category, by name."
+          },
+          "totals": {
+            "description": "Month totals.",
+            "$ref": "#/components/schemas/GetBudgetsBudgetTotals"
           }
         }
       },
@@ -561,6 +896,36 @@
           }
         }
       },
+      "SetBudgetRequest": {
+        "required": [
+          "month",
+          "amount",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "month": {
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "type": "string",
+            "description": "First month the budget applies to (yyyy-MM). Earlier months are unaffected."
+          },
+          "amount": {
+            "maximum": 9007199254740991,
+            "minimum": 1,
+            "type": "integer",
+            "description": "Monthly limit in minor units (cents), greater than zero.",
+            "format": "int64"
+          },
+          "version": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "The line's `version` if a row already starts this month; null if the budget is inherited or new.",
+            "format": "int64"
+          }
+        }
+      },
       "SortDirection": {
         "enum": [
           "Asc",
@@ -686,6 +1051,9 @@
     }
   },
   "tags": [
+    {
+      "name": "Budgets"
+    },
     {
       "name": "Categories"
     },

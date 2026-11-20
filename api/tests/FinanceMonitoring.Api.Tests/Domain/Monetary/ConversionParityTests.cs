@@ -13,7 +13,7 @@ public sealed class ConversionParityTests
 {
     public static TheoryData<string, long, string, string, string, long> Cases()
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "fixtures", "conversion-cases.json");
+        var path = Path.Combine(AppContext.BaseDirectory, "fixtures", "money", "conversion-cases.json");
         var fixture = JsonSerializer.Deserialize<FixtureFile>(
             File.ReadAllText(path),
             new JsonSerializerOptions(JsonSerializerDefaults.Web))!;

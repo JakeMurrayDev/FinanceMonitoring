@@ -1,4 +1,5 @@
 using FinanceMonitoring.Api.Common.Endpoints;
+using FinanceMonitoring.Api.Common.Http;
 using FinanceMonitoring.Api.Data;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -46,7 +47,7 @@ public static class DeleteTransaction
                 .Select(t => (long?)t.Version)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            return currentVersion is null ? TypedResults.NotFound() : Conflict.Problem(currentVersion);
+            return currentVersion is null ? TypedResults.NotFound() : ConflictProblem.For("transaction", currentVersion);
         }
     }
 }

@@ -1,14 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { PageHeader } from '@/components/layout/PageHeader'
+import { BudgetsPage } from '@/features/budgets/components/BudgetsPage'
+import { budgetsQueryOptions } from '@/features/budgets/queries'
+import { budgetSearchSchema } from '@/features/budgets/search-schema'
+import { currentMonth } from '@/lib/months'
+
+const ignore = () => undefined
 
 export const Route = createFileRoute('/budgets')({
+  validateSearch: budgetSearchSchema,
+  loaderDeps: ({ search }) => search,
+  loader: ({ context: { queryClient }, deps }) => {
+    void queryClient.query(budgetsQueryOptions(deps.month ?? currentMonth())).catch(ignore)
+  },
   head: () => ({ meta: [{ title: 'Budgets · Finance Monitor' }] }),
   component: BudgetsPage,
 })
-
-function BudgetsPage() {
-  return (
-    <PageHeader title="Budgets" description="Monthly budgets per category — coming in Phase 4." />
-  )
-}

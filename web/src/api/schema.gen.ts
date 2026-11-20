@@ -4,6 +4,41 @@
  */
 
 export interface paths {
+    "/api/budgets/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set a category's monthly budget from a month onward. */
+        put: operations["SetBudget"];
+        post?: never;
+        /** Clear a category's budget from a month onward. Returns the updated line. */
+        delete: operations["ClearBudget"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/budgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Budgets, spending and status for every expense category in a month. */
+        get: operations["GetBudgets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/categories": {
         parameters: {
             query?: never;
@@ -62,6 +97,8 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {unknown} */
+        BudgetStatus: "NoBudget" | "OnTrack" | "NearLimit" | "OverBudget";
         CreateTransactionRequest: {
             /**
              * Format: date
@@ -81,6 +118,78 @@ export interface components {
             type: components["schemas"]["TransactionType"];
             /** @description A category whose type matches Type. */
             categoryId: string;
+        };
+        GetBudgetsBudgetLine: {
+            /** @description Expense category slug. */
+            categoryId: string;
+            /** @description Display name. */
+            categoryName: string;
+            /**
+             * Format: int64
+             * @description Limit for this month in minor units, or null if none applies.
+             */
+            budget: null | number;
+            /** @description The month (yyyy-MM) the applicable budget row started; null if there has never been one. */
+            budgetEffectiveFrom: null | string;
+            /**
+             * Format: int64
+             * @description Expenses in this category this month, in minor units.
+             */
+            spent: number;
+            /**
+             * Format: int64
+             * @description Budget minus spent (negative when over), or null with no budget.
+             */
+            remaining: null | number;
+            /**
+             * Format: int32
+             * @description Whole percent of the budget spent, rounded down; null with no budget.
+             */
+            percentUsed: null | number;
+            /** @description How spending compares with the budget. */
+            status: components["schemas"]["BudgetStatus"];
+            /**
+             * Format: int64
+             * @description Version of the row that starts this month, if any. Send it when changing this month's budget; null means the budget is inherited.
+             */
+            version: null | number;
+        };
+        GetBudgetsBudgetTotals: {
+            /**
+             * Format: int64
+             * @description Sum of all budgets this month.
+             */
+            budgeted: number;
+            /**
+             * Format: int64
+             * @description Spending in categories that have a budget.
+             */
+            spentInBudgeted: number;
+            /**
+             * Format: int64
+             * @description Budgeted minus spent in budgeted categories.
+             */
+            remaining: number;
+            /**
+             * Format: int64
+             * @description Spending in categories with no budget.
+             */
+            unbudgeted: number;
+            /**
+             * Format: int32
+             * @description Number of categories over budget.
+             */
+            overBudgetCount: number;
+        };
+        GetBudgetsResponse: {
+            /** @description The month reported on (yyyy-MM). */
+            month: string;
+            /** @description ISO 4217 code of every amount. */
+            currency: string;
+            /** @description One line per expense category, by name. */
+            lines: components["schemas"]["GetBudgetsBudgetLine"][];
+            /** @description Month totals. */
+            totals: components["schemas"]["GetBudgetsBudgetTotals"];
         };
         HttpValidationProblemDetails: {
             type?: null | string;
@@ -135,6 +244,20 @@ export interface components {
             status?: null | number;
             detail?: null | string;
             instance?: null | string;
+        };
+        SetBudgetRequest: {
+            /** @description First month the budget applies to (yyyy-MM). Earlier months are unaffected. */
+            month: string;
+            /**
+             * Format: int64
+             * @description Monthly limit in minor units (cents), greater than zero.
+             */
+            amount: number;
+            /**
+             * Format: int64
+             * @description The line's `version` if a row already starts this month; null if the budget is inherited or new.
+             */
+            version: null | number;
         };
         /** @enum {unknown} */
         SortDirection: "Asc" | "Desc";
@@ -205,19 +328,160 @@ export interface components {
     headers: never;
     pathItems: never;
 }
+export type SchemaBudgetStatus = components['schemas']['BudgetStatus'];
 export type SchemaCreateTransactionRequest = components['schemas']['CreateTransactionRequest'];
+export type SchemaGetBudgetsBudgetLine = components['schemas']['GetBudgetsBudgetLine'];
+export type SchemaGetBudgetsBudgetTotals = components['schemas']['GetBudgetsBudgetTotals'];
+export type SchemaGetBudgetsResponse = components['schemas']['GetBudgetsResponse'];
 export type SchemaHttpValidationProblemDetails = components['schemas']['HttpValidationProblemDetails'];
 export type SchemaListCategoriesCategoryItem = components['schemas']['ListCategoriesCategoryItem'];
 export type SchemaListCategoriesResponse = components['schemas']['ListCategoriesResponse'];
 export type SchemaListTransactionsSortField = components['schemas']['ListTransactionsSortField'];
 export type SchemaPagedResponseOfTransactionResponse = components['schemas']['PagedResponseOfTransactionResponse'];
 export type SchemaProblemDetails = components['schemas']['ProblemDetails'];
+export type SchemaSetBudgetRequest = components['schemas']['SetBudgetRequest'];
 export type SchemaSortDirection = components['schemas']['SortDirection'];
 export type SchemaTransactionResponse = components['schemas']['TransactionResponse'];
 export type SchemaTransactionType = components['schemas']['TransactionType'];
 export type SchemaUpdateTransactionRequest = components['schemas']['UpdateTransactionRequest'];
 export type $defs = Record<string, never>;
 export interface operations {
+    SetBudget: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetBudgetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetBudgetsBudgetLine"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ClearBudget: {
+        parameters: {
+            query: {
+                month: string;
+                version?: number;
+            };
+            header?: never;
+            path: {
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetBudgetsBudgetLine"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetBudgets: {
+        parameters: {
+            query?: {
+                month?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GetBudgetsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+        };
+    };
     ListCategories: {
         parameters: {
             query?: {

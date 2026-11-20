@@ -7,7 +7,7 @@
 /*
  * Design tokens. shadcn components read these CSS variables, so the whole
  * palette can be re-themed here without touching component code.
- * `--income` / `--expense` are app-specific tokens; both pass WCAG AA (4.5:1)
+ * `--income` / `--expense` / `--warning` are app-specific tokens; both pass WCAG AA (4.5:1)
  * against their background. Colour is never the only signal — amounts also
  * carry a +/− sign and an icon/label.
  */
@@ -34,6 +34,7 @@
 
   --income: oklch(0.47 0.12 155);
   --expense: oklch(0.5 0.19 27);
+  --warning: oklch(0.52 0.12 70);
 }
 
 .dark {
@@ -58,6 +59,7 @@
 
   --income: oklch(0.78 0.15 155);
   --expense: oklch(0.75 0.15 25);
+  --warning: oklch(0.83 0.14 85);
 }
 
 /* Expose the variables above as Tailwind utilities: bg-background, text-income, … */
@@ -86,6 +88,7 @@
   --color-ring: var(--ring);
   --color-income: var(--income);
   --color-expense: var(--expense);
+  --color-warning: var(--warning);
 }
 
 @layer base {

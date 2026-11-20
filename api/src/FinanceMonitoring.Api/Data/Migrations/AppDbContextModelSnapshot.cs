@@ -15,12 +15,57 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
     // If you encounter a merge conflict in the line below, it means you need to
     // discard one of the migration branches and recreate its migrations on top of
     // the other branch. See https://aka.ms/efcore-docs-migrations-conflicts for more info.
-    public override string LastMigrationId => "20261120092336_AddTransactionVersion";
+    public override string LastMigrationId => "20261120102056_AddBudgets";
 
     protected override void BuildModel(ModelBuilder modelBuilder)
     {
 #pragma warning disable 612, 618
         modelBuilder.HasAnnotation("ProductVersion", "11.0.0");
+
+        modelBuilder.Entity("FinanceMonitoring.Api.Domain.Budgets.Budget", b =>
+            {
+                b.Property<Guid>("Id")
+                    .ValueGeneratedOnAdd()
+                    .HasColumnType("TEXT");
+
+                b.Property<long?>("Amount")
+                    .HasColumnType("INTEGER");
+
+                b.Property<string>("CategoryId")
+                    .IsRequired()
+                    .HasColumnType("TEXT");
+
+                b.Property<DateTimeOffset>("CreatedAt")
+                    .HasColumnType("TEXT");
+
+                b.Property<string>("Currency")
+                    .IsRequired()
+                    .HasMaxLength(3)
+                    .HasColumnType("TEXT")
+                    .IsFixedLength();
+
+                b.Property<DateOnly>("EffectiveFrom")
+                    .HasColumnType("TEXT");
+
+                b.Property<DateTimeOffset>("UpdatedAt")
+                    .HasColumnType("TEXT");
+
+                b.Property<long>("Version")
+                    .IsConcurrencyToken()
+                    .HasColumnType("INTEGER");
+
+                b.HasKey("Id");
+
+                b.HasIndex("CategoryId", "EffectiveFrom")
+                    .IsUnique();
+
+                b.ToTable("Budgets", t =>
+                    {
+                        t.HasCheckConstraint("CK_Budgets_Amount_PositiveOrCleared", "\"Amount\" IS NULL OR \"Amount\" > 0");
+
+                        t.HasCheckConstraint("CK_Budgets_EffectiveFrom_FirstOfMonth", "substr(\"EffectiveFrom\", 9, 2) = '01'");
+                    });
+            });
 
         modelBuilder.Entity("FinanceMonitoring.Api.Domain.Categories.Category", b =>
             {
@@ -187,6 +232,17 @@ partial class AppDbContextModelSnapshot : ModelSnapshot
 
                         t.HasCheckConstraint("CK_Transactions_Currency_Length", "length(\"Currency\") = 3");
                     });
+            });
+
+        modelBuilder.Entity("FinanceMonitoring.Api.Domain.Budgets.Budget", b =>
+            {
+                b.HasOne("FinanceMonitoring.Api.Domain.Categories.Category", "Category")
+                    .WithMany()
+                    .HasForeignKey("CategoryId")
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .IsRequired();
+
+                b.Navigation("Category");
             });
 
         modelBuilder.Entity("FinanceMonitoring.Api.Domain.Transactions.Transaction", b =>

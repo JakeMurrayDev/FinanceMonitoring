@@ -1,4 +1,5 @@
 using FinanceMonitoring.Api.Domain;
+using FinanceMonitoring.Api.Domain.Budgets;
 using FinanceMonitoring.Api.Domain.Transactions;
 
 namespace FinanceMonitoring.Api.Data.Seeding;
@@ -105,5 +106,40 @@ public static class DemoData
         Add(trip.AddDays(3), "Hotel Zephyr", 54_210, TransactionType.Expense, "travel");
 
         return items.OrderBy(t => t.Date).ThenBy(t => t.Id).ToList();
+    }
+
+    /// <summary>
+    /// Budgets that start six months before <paramref name="today"/>. Dining
+    /// Out is raised two months ago (effective dating), Health and Travel have
+    /// none, and Groceries and Dining are tight so the demo shows every status.
+    /// </summary>
+    public static IReadOnlyList<Budget> GenerateBudgets(DateOnly today)
+    {
+        var thisMonth = new DateOnly(today.Year, today.Month, 1);
+        var start = thisMonth.AddMonths(-6);
+        var created = start.ToDateTime(new TimeOnly(9, 0), DateTimeKind.Utc);
+
+        Budget Row(string category, long amount, DateOnly from) => new()
+        {
+            CategoryId = category,
+            EffectiveFrom = from,
+            Amount = amount,
+            Currency = Usd,
+            CreatedAt = created,
+            UpdatedAt = created,
+        };
+
+        return
+        [
+            Row("groceries", 30_000, start),
+            Row("dining", 9_000, start), // raised below: effective dating
+            Row("dining", 12_000, thisMonth.AddMonths(-2)),
+            Row("rent", 165_000, start),
+            Row("utilities", 20_000, start),
+            Row("transport", 12_000, start),
+            Row("subscriptions", 3_000, start),
+            Row("entertainment", 6_000, start),
+            Row("shopping", 15_000, start),
+        ];
     }
 }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using FinanceMonitoring.Api.Common.Endpoints;
+using FinanceMonitoring.Api.Common.Http;
 using FinanceMonitoring.Api.Data;
 using FinanceMonitoring.Api.Domain;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -54,7 +55,7 @@ public static class UpdateTransaction
 
             if (transaction.Version != request.Version)
             {
-                return Conflict.Problem(transaction.Version);
+                return ConflictProblem.For("transaction", transaction.Version);
             }
 
             var errors = await TransactionRules.ValidateAsync(
@@ -81,7 +82,7 @@ public static class UpdateTransaction
             }
             catch (DbUpdateConcurrencyException)
             {
-                return Conflict.Problem(currentVersion: null);
+                return ConflictProblem.For("transaction", currentVersion: null);
             }
 
             var response = await db.Transactions.AsNoTracking()

@@ -1,5 +1,4 @@
 using FinanceMonitoring.Api.Data;
-using FinanceMonitoring.Api.Domain.Transactions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -44,11 +43,11 @@ public sealed class FinanceApiFactory : WebApplicationFactory<Program>
     }
 
     /// <summary>Insert rows directly, bypassing the API, to set up a known state.</summary>
-    public async Task SeedAsync(IEnumerable<Transaction> transactions, CancellationToken cancellationToken)
+    public async Task SeedAsync(IEnumerable<object> entities, CancellationToken cancellationToken)
     {
         await using var scope = Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        db.Transactions.AddRange(transactions);
+        db.AddRange(entities);
         await db.SaveChangesAsync(cancellationToken);
     }
 

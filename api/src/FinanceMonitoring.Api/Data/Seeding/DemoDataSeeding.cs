@@ -1,3 +1,4 @@
+using FinanceMonitoring.Api.Domain.Budgets;
 using FinanceMonitoring.Api.Domain.Transactions;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,16 +18,24 @@ public static class DemoDataSeeding
         return options
             .UseSeeding((context, _) =>
             {
-                var transactions = context.Set<Transaction>();
-                if (transactions.Any()) return;
-                transactions.AddRange(DemoData.Generate(today));
+                if (!context.Set<Transaction>().Any()) context.Set<Transaction>().AddRange(DemoData.Generate(today));
+                if (!context.Set<Budget>().Any()) context.Set<Budget>().AddRange(DemoData.GenerateBudgets(today));
                 context.SaveChanges();
             })
             .UseAsyncSeeding(async (context, _, cancellationToken) =>
             {
-                var transactions = context.Set<Transaction>();
-                if (await transactions.AnyAsync(cancellationToken)) return;
-                transactions.AddRange(DemoData.Generate(today));
+                // Each table is seeded independently, so an existing database
+                // created before budgets existed still gets demo budgets.
+                if (!await context.Set<Transaction>().AnyAsync(cancellationToken))
+                {
+                    context.Set<Transaction>().AddRange(DemoData.Generate(today));
+                }
+
+                if (!await context.Set<Budget>().AnyAsync(cancellationToken))
+                {
+                    context.Set<Budget>().AddRange(DemoData.GenerateBudgets(today));
+                }
+
                 await context.SaveChangesAsync(cancellationToken);
             });
     }

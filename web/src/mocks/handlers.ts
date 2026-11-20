@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw'
 
 import type { TransactionItem } from '@/api/types'
 
+import { budgetDb } from './budgets'
 import { mockCategories, pageOf } from './data'
 import { db } from './db'
 
@@ -51,6 +52,33 @@ export const handlers = [
   http.put('*/api/transactions/:id', async ({ request, params }) => {
     const body = (await request.json()) as Body & { version: number }
     const result = db.update(String(params.id), body)
+    if (result === undefined) return notFound()
+    if (result === 'conflict') return conflict()
+    return HttpResponse.json(result)
+  }),
+
+  http.get('*/api/budgets', ({ request }) => {
+    const month = new URL(request.url).searchParams.get('month') ?? '2026-11'
+    return HttpResponse.json(budgetDb.month(month))
+  }),
+
+  http.put('*/api/budgets/:categoryId', async ({ request, params }) => {
+    const body = (await request.json()) as { month: string; amount: number; version: number | null }
+    const result = budgetDb.change(String(params.categoryId), body.month, body.amount, body.version)
+    if (result === undefined) return notFound()
+    if (result === 'conflict') return conflict()
+    return HttpResponse.json(result)
+  }),
+
+  http.delete('*/api/budgets/:categoryId', ({ request, params }) => {
+    const query = new URL(request.url).searchParams
+    const version = query.get('version')
+    const result = budgetDb.change(
+      String(params.categoryId),
+      query.get('month') ?? '',
+      null,
+      version === null ? null : Number(version),
+    )
     if (result === undefined) return notFound()
     if (result === 'conflict') return conflict()
     return HttpResponse.json(result)

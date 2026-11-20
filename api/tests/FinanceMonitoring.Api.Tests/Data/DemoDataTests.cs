@@ -2,7 +2,9 @@ using System.Net.Http.Json;
 using FinanceMonitoring.Api.Common.Paging;
 using FinanceMonitoring.Api.Data.Seeding;
 using FinanceMonitoring.Api.Domain;
+using FinanceMonitoring.Api.Domain.Budgets;
 using FinanceMonitoring.Api.Domain.Transactions;
+using FinanceMonitoring.Api.Features.Budgets;
 using FinanceMonitoring.Api.Features.Transactions;
 using FinanceMonitoring.Api.Tests.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
@@ -80,5 +82,20 @@ public sealed class DemoDataTests
             new Uri("/api/transactions?pageSize=1", UriKind.Relative), TestJson.Options, ct);
 
         page!.TotalCount.Should().Be(_transactions.Count);
+
+        // The demo budgets are tuned so the Budgets page shows every status.
+        var budgets = await client.GetFromJsonAsync<GetBudgets.Response>(
+            new Uri("/api/budgets?month=2026-11", UriKind.Relative), TestJson.Options, ct);
+        budgets!.Lines.Select(l => l.Status).Distinct().Should().BeEquivalentTo(Enum.GetValues<BudgetStatus>());
+    }
+
+    [Fact]
+    public void Generates_effective_dated_budgets_for_expense_categories()
+    {
+        var budgets = DemoData.GenerateBudgets(Today);
+
+        budgets.Should().OnlyContain(b => b.EffectiveFrom.Day == 1 && b.Amount > 0);
+        budgets.Where(b => b.CategoryId == "dining").Should().HaveCount(2, "Dining Out was raised partway through");
+        budgets.Should().NotContain(b => b.CategoryId == "salary");
     }
 }

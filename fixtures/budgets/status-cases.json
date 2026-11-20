@@ -1,0 +1,16 @@
+{
+  "description": "Budget status rules shared by api (BudgetMath) and web (budgetStatus). Amounts are integer minor units. Near limit means spent >= 80% of budget; over budget means spent > budget (exactly 100% is near, not over). percentUsed is rounded down.",
+  "cases": [
+    { "name": "no budget", "spent": 5000, "budget": null, "status": "NoBudget", "percentUsed": null },
+    { "name": "nothing spent", "spent": 0, "budget": 40000, "status": "OnTrack", "percentUsed": 0 },
+    { "name": "79.99% is on track", "spent": 7999, "budget": 10000, "status": "OnTrack", "percentUsed": 79 },
+    { "name": "exactly 80% is near the limit", "spent": 8000, "budget": 10000, "status": "NearLimit", "percentUsed": 80 },
+    { "name": "99.99% rounds down, never shows 100% while under", "spent": 9999, "budget": 10000, "status": "NearLimit", "percentUsed": 99 },
+    { "name": "exactly 100% is near the limit, not over", "spent": 10000, "budget": 10000, "status": "NearLimit", "percentUsed": 100 },
+    { "name": "one cent over is over budget", "spent": 10001, "budget": 10000, "status": "OverBudget", "percentUsed": 100 },
+    { "name": "far over", "spent": 25000, "budget": 10000, "status": "OverBudget", "percentUsed": 250 },
+    { "name": "small budget: 4 of 5 cents is exactly 80%", "spent": 4, "budget": 5, "status": "NearLimit", "percentUsed": 80 },
+    { "name": "small budget: 3 of 5 cents is 60%", "spent": 3, "budget": 5, "status": "OnTrack", "percentUsed": 60 },
+    { "name": "exactly 80% of a non-round budget", "spent": 232, "budget": 290, "status": "NearLimit", "percentUsed": 80 }
+  ]
+}

@@ -25,7 +25,7 @@
 
   <ItemGroup>
     <!-- Shared with the frontend's Vitest suite so both sides must agree on every conversion. -->
-    <None Include="..\..\..\fixtures\money\*.json" LinkBase="fixtures" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\..\fixtures\**\*.json" LinkBase="fixtures" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
