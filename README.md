@@ -20,7 +20,7 @@ pnpm dev
 - Web: http://localhost:5173
 - API: http://localhost:5080, with interactive docs at http://localhost:5080/scalar
 
-The API creates and migrates its SQLite database (`finance.db`) on first run.
+The API creates and migrates its SQLite database (`finance.db`) on first run and, in Development, seeds about 100 demo transactions covering the last six months. Delete the file to reset.
 
 ## Scripts (from the repo root)
 
@@ -30,6 +30,7 @@ The API creates and migrates its SQLite database (`finance.db`) on first run.
 | `pnpm test`      | Run the Vitest and xUnit suites                          |
 | `pnpm check`     | Typecheck, lint, format-check and test both apps         |
 | `pnpm build`     | Production build of both apps                            |
+| `pnpm --filter web gen:api` | Regenerate TypeScript API types from `api/openapi/finance-api.json` (written on every API build) |
 
 ## Repository layout
 

@@ -1,18 +1,9 @@
-import { createMemoryHistory, RouterProvider } from '@tanstack/react-router'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { createQueryClient } from './query-client'
-import { createAppRouter } from './router'
+import { renderApp } from '@/test/render'
 
-/** Render the real route tree at a given URL, without a browser. */
-function renderAt(url: string) {
-  const history = createMemoryHistory({ initialEntries: [url] })
-  const router = createAppRouter(createQueryClient(), history)
-  render(<RouterProvider router={router} />)
-  return router
-}
+const renderAt = renderApp
 
 describe('routing shell', () => {
   it('renders the dashboard at /', async () => {
@@ -22,8 +13,7 @@ describe('routing shell', () => {
   })
 
   it('navigates via the main nav and marks the active link', async () => {
-    const user = userEvent.setup()
-    renderAt('/')
+    const { user } = renderAt('/')
 
     const nav = await screen.findByRole('navigation', { name: 'Main' })
     await user.click(screen.getByRole('link', { name: 'Transactions' }))

@@ -1,6 +1,9 @@
+using FinanceMonitoring.Api.Data;
+using FinanceMonitoring.Api.Domain.Transactions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace FinanceMonitoring.Api.Tests.Infrastructure;
@@ -30,6 +33,15 @@ public sealed class FinanceApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("ConnectionStrings:Finance", _connectionString);
         builder.UseSetting("Database:MigrateOnStartup", "true");
         builder.ConfigureLogging(logging => logging.ClearProviders()); // keep test output readable
+    }
+
+    /// <summary>Insert rows directly, bypassing the API, to set up a known state.</summary>
+    public async Task SeedAsync(IEnumerable<Transaction> transactions, CancellationToken cancellationToken)
+    {
+        await using var scope = Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Transactions.AddRange(transactions);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     protected override void Dispose(bool disposing)

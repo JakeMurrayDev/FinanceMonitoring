@@ -2,6 +2,7 @@ using FinanceMonitoring.Api.Common.Endpoints;
 using FinanceMonitoring.Api.Data;
 using FinanceMonitoring.Api.Domain;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinanceMonitoring.Api.Features.Categories;
@@ -11,7 +12,7 @@ public static class ListCategories
 {
     // ── Request ────────────────────────────────────────────────────────────
     /// <param name="Type">Optional filter; omit to list every category.</param>
-    public sealed record Request(TransactionType? Type);
+    public sealed record Request([FromQuery(Name = "type")] TransactionType? Type);
 
     // ── Response ───────────────────────────────────────────────────────────
     public sealed record Response(IReadOnlyList<CategoryItem> Categories);
