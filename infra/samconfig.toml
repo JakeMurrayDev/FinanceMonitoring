@@ -1,0 +1,21 @@
+# SAM CLI defaults, so `sam deploy` and `sam validate` need no flags.
+# SAM reads this file because it sits next to template.yaml. Command-line flags
+# win over it, which is how the GitHub workflow skips the changeset prompt.
+#
+# No AWS profile is set here: CI authenticates through OIDC. Locally, pass
+# `--profile <name>` or set AWS_PROFILE.
+version = 0.1
+
+[default.global.parameters]
+stack_name = "finance-monitor-api"
+region = "ap-southeast-2"
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+resolve_s3 = true             # SAM creates and reuses one bucket for uploads
+confirm_changeset = true      # locally, show what will change and ask first
+fail_on_empty_changeset = false
+parameter_overrides = "PublicApiDocs=\"true\""
+
+[default.validate.parameters]
+lint = true

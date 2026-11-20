@@ -19,6 +19,20 @@ globalThis.ResizeObserver = class ResizeObserver {
   disconnect = vi.fn()
 }
 
+// jsdom has no matchMedia. Emulate a light-themed desktop: min-width
+// queries match (tests opt into phone layouts with mockViewport) and
+// prefers-color-scheme: dark doesn't.
+Object.defineProperty(window, 'matchMedia', {
+  configurable: true,
+  writable: true,
+  value: vi.fn((query: string) => ({
+    matches: query.includes('min-width'),
+    media: query,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+  })),
+})
+
 // Fail loudly on any request without a handler, rather than hitting the network.
 beforeAll(() => {
   server.listen({ onUnhandledFrame: 'error' })

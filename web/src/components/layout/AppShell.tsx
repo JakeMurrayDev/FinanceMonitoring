@@ -2,6 +2,9 @@ import { Link } from '@tanstack/react-router'
 import { LayoutDashboard, PiggyBank, ReceiptText, Wallet } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { DemoBanner } from './DemoBanner'
+import { ThemeToggle } from './ThemeToggle'
+
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/transactions', label: 'Transactions', icon: ReceiptText },
@@ -19,6 +22,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         Skip to main content
       </a>
 
+      <DemoBanner />
       <header className="border-b">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-3">
           <Link to="/" className="flex items-center gap-2 font-semibold">
@@ -43,6 +47,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               ))}
             </ul>
           </nav>
+
+          <div className="ml-auto">
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 

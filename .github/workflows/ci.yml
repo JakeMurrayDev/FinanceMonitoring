@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web (typecheck, lint, format, test, build)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6 # version from package.json "packageManager"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - run: pnpm install --frozen-lockfile
+
+      # The API writes its OpenAPI document on build, and the web app's types
+      # are generated from it. Regenerate both and fail if either differs from
+      # what's committed: the C# contract and the TypeScript can't drift.
+      - name: Check generated API types are up to date
+        run: |
+          dotnet build api/src/FinanceMonitoring.Api
+          pnpm --filter web gen:api
+          git diff --exit-code -- api/openapi web/src/api/schema.gen.ts \
+            || { echo "::error::Generated API types are stale. Run 'dotnet build api' then 'pnpm --filter web gen:api' and commit."; exit 1; }
+
+      - run: pnpm --filter web check
+      - run: pnpm --filter web build
+
+  api:
+    name: API (format, build, test)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: dotnet format api --verify-no-changes
+      - run: dotnet test api
+
+  lambda-package:
+    name: Lambda package (publish + smoke test on arm64)
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: api/scripts/publish-lambda.sh linux-arm64
+      - run: api/scripts/smoke-test.sh

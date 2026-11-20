@@ -47,7 +47,7 @@ export function CategoryFilter({ categories = [], selected, onChange }: Category
             <ChevronDown aria-hidden="true" className="text-muted-foreground" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-64 p-0">
+        <PopoverContent align="start" className="w-64 p-0" aria-label="Filter by category">
           <div className="max-h-80 overflow-y-auto p-3">
             {groups.map((group) =>
               group.items.length ? (

@@ -1,6 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { AlertCircle, RotateCw, TriangleAlert } from 'lucide-react'
+import { lazy, Suspense } from 'react'
 
 import { isApiError } from '@/api/client'
 import { MonthNavigator } from '@/components/layout/MonthNavigator'
@@ -15,9 +16,14 @@ import { ACCOUNT_CURRENCY, useDisplayCurrency } from '../display-currency'
 import { dashboardQueryOptions } from '../queries'
 import { CurrencyPicker } from './CurrencyPicker'
 import { KpiTiles } from './KpiTiles'
-import { MonthlyTrend } from './MonthlyTrend'
 import { RateNotice } from './RateNotice'
-import { SpendingByCategory } from './SpendingByCategory'
+
+// Charts pull in Recharts (~130 kB gzipped). Loading them separately lets the
+// KPI tiles render first while the chart code downloads in parallel.
+const SpendingByCategory = lazy(() =>
+  import('./SpendingByCategory').then((m) => ({ default: m.SpendingByCategory })),
+)
+const MonthlyTrend = lazy(() => import('./MonthlyTrend').then((m) => ({ default: m.MonthlyTrend })))
 
 const route = getRouteApi('/')
 
@@ -96,14 +102,22 @@ export function DashboardPage() {
           <KpiTiles dashboard={dashboard.data} />
           {dashboard.data.rate && <RateNotice rate={dashboard.data.rate} />}
           <div className="grid gap-6 lg:grid-cols-2">
-            <SpendingByCategory
-              items={dashboard.data.byCategory}
-              currency={dashboard.data.currency}
-            />
-            <MonthlyTrend points={dashboard.data.trend} currency={dashboard.data.currency} />
+            <Suspense fallback={<ChartPlaceholder />}>
+              <SpendingByCategory
+                items={dashboard.data.byCategory}
+                currency={dashboard.data.currency}
+              />
+            </Suspense>
+            <Suspense fallback={<ChartPlaceholder />}>
+              <MonthlyTrend points={dashboard.data.trend} currency={dashboard.data.currency} />
+            </Suspense>
           </div>
         </div>
       )}
     </>
   )
+}
+
+function ChartPlaceholder() {
+  return <Skeleton role="status" aria-label="Loading chart" className="h-80 rounded-xl" />
 }

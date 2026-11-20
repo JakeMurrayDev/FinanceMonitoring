@@ -1,0 +1,68 @@
+# Deploys the API to AWS Lambda. Manual only: run it from the Actions tab.
+#
+# One-time setup (see README › Deployment):
+#   1. An IAM role that GitHub can assume via OIDC (no long-lived keys), with
+#      permission to deploy the SAM stack.
+#   2. Repository secret AWS_DEPLOY_ROLE_ARN = that role's ARN.
+#   3. Repository variable AWS_REGION = ap-southeast-2 (matches infra/samconfig.toml).
+name: Deploy API
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write # for OIDC
+  contents: read
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Build on arm64, the same architecture as the Lambda function, so the
+    # packaged binary can be smoke-tested here before it's uploaded.
+    runs-on: ubuntu-24.04-arm
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Publish (self-contained, ReadyToRun, linux-arm64)
+        run: api/scripts/publish-lambda.sh linux-arm64
+
+      - name: Smoke-test the packaged binary
+        # Outside Lambda the same binary runs on Kestrel, so this proves the
+        # self-contained package starts, migrates, seeds and serves.
+        run: api/scripts/smoke-test.sh
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: aws-actions/setup-sam@v3
+        with:
+          use-installer: true
+
+      - name: Deploy
+        run: >
+          sam deploy
+          --template-file infra/template.yaml
+          --stack-name finance-monitor-api
+          --capabilities CAPABILITY_IAM
+          --resolve-s3
+          --no-confirm-changeset
+          --no-fail-on-empty-changeset
+
+      - name: Check the live API
+        # A 403 here usually means the function URL's resource policy is
+        # missing lambda:InvokeFunction (see README › Deployment).
+        run: |
+          url=$(aws cloudformation describe-stacks --stack-name finance-monitor-api \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" --output text)
+          echo "API: $url"
+          curl -sf --retry 3 "${url}api/categories" | grep -q '"categories"'

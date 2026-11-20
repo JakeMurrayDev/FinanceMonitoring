@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Finance Monitor API: ASP.NET Core on AWS Lambda (self-contained .NET 11,
+  ReadyToRun, arm64), exposed through a Lambda Function URL. The web app on
+  Vercel rewrites /api/* to this URL, so browsers see a single origin.
+
+Parameters:
+  PublicApiDocs:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Serve interactive API docs at /api/docs.
+
+Resources:
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: finance-monitor-api
+      Runtime: provided.al2023 # OS-only runtime: the package brings its own .NET 11
+      Handler: bootstrap
+      Architectures: [arm64]
+      CodeUri: ../api/artifacts/lambda # produced by api/scripts/publish-lambda.sh
+      MemorySize: 1024 # more memory also means more CPU, so faster cold starts
+      Timeout: 15
+      Environment:
+        Variables:
+          ASPNETCORE_ENVIRONMENT: Production
+          # Demo database: SQLite in Lambda's temporary storage, migrated and
+          # seeded with fresh demo data on every cold start. Changes last while
+          # an instance is warm. A production system would use DynamoDB or Aurora.
+          ConnectionStrings__Finance: Data Source=/tmp/finance.db
+          Database__MigrateOnStartup: 'true'
+          Database__SeedDemoData: 'true'
+          Api__PublicDocs: !Ref PublicApiDocs
+      FunctionUrlConfig:
+        # Public: it's a demo API. SAM adds the resource policy that a public
+        # function URL needs. Abuse is bounded by the app's rate limiter and
+        # Lambda's account concurrency limit.
+        AuthType: NONE
+      LoggingConfig:
+        LogGroup: !Ref ApiLogs
+
+  ApiLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/finance-monitor-api
+      RetentionInDays: 14 # logs don't accumulate (or cost) forever
+
+Outputs:
+  ApiUrl:
+    Description: Function URL. Put this in web/vercel.json's /api rewrite.
+    Value: !GetAtt ApiFunctionUrl.FunctionUrl

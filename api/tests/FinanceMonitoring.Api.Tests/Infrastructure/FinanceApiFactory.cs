@@ -45,6 +45,7 @@ public sealed class FinanceApiFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:Finance", _connectionString);
         builder.UseSetting("Database:MigrateOnStartup", "true");
+        builder.UseSetting("RateLimiting:PermitsPerMinute", "100000"); // RateLimitingTests covers the limiter
         builder.ConfigureLogging(logging => logging.ClearProviders()); // keep test output readable
         builder.ConfigureTestServices(services =>
         {

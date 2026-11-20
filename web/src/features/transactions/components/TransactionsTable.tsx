@@ -27,7 +27,10 @@ import { cn } from '@/lib/utils'
 
 import { formatSignedAmount } from '../format'
 import { SORT_FIELDS, type TransactionSearch } from '../search-schema'
+import { useMediaQuery } from '@/hooks/use-media-query'
+
 import { RowActions } from './RowActions'
+import { TransactionCards } from './TransactionCards'
 import { TablePagination } from './TablePagination'
 
 // Module scope: features and columns must be stable across renders.
@@ -144,6 +147,27 @@ export function TransactionsTable({
   })
 
   const rows = table.getRowModel().rows
+  const isDesktop = useMediaQuery('(min-width: 768px)')
+  const paginationControls =
+    page && page.totalCount > 0 ? (
+      <TablePagination table={table} totalCount={page.totalCount} />
+    ) : null
+
+  if (!isDesktop) {
+    return (
+      <div className="grid grid-cols-1 gap-4">
+        <TransactionCards
+          items={rows.map((row) => row.original)}
+          pendingRows={pendingRows}
+          search={search}
+          isStale={isStale}
+          emptyState={emptyState}
+          onSortChange={onSortChange}
+        />
+        {paginationControls}
+      </div>
+    )
+  }
 
   return (
     <div className="grid gap-4">
@@ -245,9 +269,7 @@ export function TransactionsTable({
         </Table>
       </div>
 
-      {page && page.totalCount > 0 && (
-        <TablePagination table={table} totalCount={page.totalCount} />
-      )}
+      {paginationControls}
     </div>
   )
 }
@@ -257,7 +279,7 @@ function SortIcon({ sorted }: { sorted: false | 'asc' | 'desc' }) {
   return <Icon aria-hidden="true" className={cn('size-3.5', !sorted && 'opacity-40')} />
 }
 
-function TypeLabel({ type }: { type: TransactionItem['type'] }) {
+export function TypeLabel({ type }: { type: TransactionItem['type'] }) {
   // Icon + word, not colour alone, distinguishes income from expense.
   const Icon = type === 'Income' ? ArrowDownLeft : ArrowUpRight
   return (
