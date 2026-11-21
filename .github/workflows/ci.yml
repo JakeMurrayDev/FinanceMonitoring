@@ -63,3 +63,5 @@ jobs:
           global-json-file: global.json
       - run: api/scripts/publish-lambda.sh linux-arm64
       - run: api/scripts/smoke-test.sh
+      - name: Cost guardrail tests (shut-off function)
+        run: python3 -m unittest discover -s infra/tests

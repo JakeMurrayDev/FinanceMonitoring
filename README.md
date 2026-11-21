@@ -49,7 +49,7 @@ The browser only ever talks to one origin: Vercel serves the app and forwards `/
 web/        React app, organised by feature (features/transactions, budgets, dashboard)
 api/        ASP.NET Core API: one file per endpoint under Features/, tests under tests/
 fixtures/   Test cases shared by BOTH test suites (money conversion, budget status)
-infra/      AWS SAM template for the Lambda deployment
+infra/      AWS SAM template for the Lambda deployment, plus its cost guardrail
 ```
 
 ## Getting started
@@ -119,7 +119,7 @@ The API creates its SQLite database on first run and seeds about 100 demo transa
 
 ### API on AWS Lambda
 
-The API is packaged by `api/scripts/publish-lambda.sh` (self-contained, ReadyToRun, linux-arm64) and deployed with [AWS SAM](https://docs.aws.amazon.com/serverless-application-model/) from `infra/template.yaml`. That creates one Lambda function with a public Function URL and a log group with 14-day retention.
+The API is packaged by `api/scripts/publish-lambda.sh` (self-contained, ReadyToRun, linux-arm64) and deployed with [AWS SAM](https://docs.aws.amazon.com/serverless-application-model/) from `infra/template.yaml`. That creates the API function with a public Function URL, a log group with 14-day retention, and the cost guardrail described below.
 
 **From your machine** (needs the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and [SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html), e.g. `brew install awscli aws-sam-cli`):
 
@@ -144,7 +144,23 @@ After deploying, copy the stack's `ApiUrl` output into the `/api` rewrite in `we
 
 > **If the Function URL returns 403:** since October 2025, public function URLs need both `lambda:InvokeFunctionUrl` and `lambda:InvokeFunction` in the function's resource policy. SAM adds these, but older templates or manual setups may lack the second. See [Control access to Lambda function URLs](https://docs.aws.amazon.com/lambda/latest/dg/urls-auth.html).
 
-**Cost:** at demo traffic this stays inside Lambda's always-free monthly allowance (1M requests and 400,000 GB-seconds). AWS doesn't cap spending by default, so set up an **AWS Budgets alert** on the account.
+**Cost:** at demo traffic this stays inside Lambda's always-free monthly allowance (1M requests and 400,000 GB-seconds). AWS doesn't cap spending by default, so the stack has its own guardrail, and the account should have an **AWS Budgets alert** too.
+
+**Cost guardrail (automatic shut-off).** A public URL can be flooded, and every request Lambda runs is billed, including the ones the app's rate limiter turns away. So the stack watches its own traffic:
+
+- A CloudWatch alarm counts API invocations in 5-minute windows. Above `ShutOffThreshold` (default 5,000, roughly a thousand page views), it invokes a small Python function, [`infra/kill-switch/handler.py`](infra/kill-switch/handler.py).
+- That function sets the API's reserved concurrency to **0**. Lambda then rejects every request with 429 **without running or billing it**. Its IAM policy allows that one action on that one function.
+- The API stays off until you turn it back on, so a flood can't restart it. Redeploying doesn't undo it either. To restore:
+  ```bash
+  aws lambda delete-function-concurrency --function-name finance-monitor-api
+  ```
+- To be emailed when it trips, deploy with `--parameter-overrides PublicApiDocs=true AlertEmail=you@example.com` and confirm the subscription email AWS sends.
+- To test it without real traffic, force the alarm into `ALARM`. This takes the API offline until you restore it as above:
+  ```bash
+  aws cloudwatch set-alarm-state --alarm-name finance-monitor-api-traffic-spike --state-value ALARM --state-reason "Testing the guardrail"
+  ```
+
+The function's logic is unit-tested (`python3 -m unittest discover -s infra/tests`, also run in CI).
 
 ### Web on Vercel
 
@@ -156,6 +172,6 @@ After deploying, copy the stack's `ApiUrl` output into the `/api` rewrite in `we
 - **The demo database resets.** On Lambda, SQLite lives in the function's temporary storage, so it re-seeds fresh sample data on each cold start, and concurrent instances each have their own copy. A production deployment would use DynamoDB or Aurora; with EF Core, moving to Postgres is a provider change rather than a rewrite.
 - **Single user, no sign-in.** Authentication and per-user data are out of scope for the demo.
 - **Amounts are stored in USD.** Other currencies are display-only conversions.
-- **Rate limiting is best-effort.** It partitions by the forwarded client IP, which a caller hitting the function URL directly could spoof. Real protection would be AWS WAF or API Gateway throttling.
+- **Rate limiting is best-effort.** It partitions by the forwarded client IP, which a caller hitting the function URL directly could spoof, and each Lambda instance keeps its own count. It doesn't save money either, since rejected requests are still invocations; the cost guardrail does that by switching the API off. Real protection would be CloudFront with AWS WAF in front of the function, with the function URL closed to direct calls.
 - **No Content Security Policy yet.** The other security headers are set; a CSP needs care with chart and dialog libraries that use inline styles.
 - **Cold starts.** The first request after the function has been idle takes a few seconds while .NET starts, migrates and seeds the database.

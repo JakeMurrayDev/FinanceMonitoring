@@ -12,6 +12,25 @@ Parameters:
     AllowedValues: ['true', 'false']
     Description: Serve interactive API docs at /api/docs.
 
+  ShutOffThreshold:
+    Type: Number
+    Default: 5000
+    MinValue: 100
+    Description: >
+      API invocations in 5 minutes that trip the cost guardrail and stop the
+      API. One page view is about 3-5 requests, so the default is roughly a
+      thousand page views in five minutes, far above real demo traffic.
+
+  AlertEmail:
+    Type: String
+    Default: ''
+    Description: >
+      Optional. Email address told when the guardrail trips (AWS sends a
+      confirmation email first). Pass it at deploy time rather than committing it.
+
+Conditions:
+  HasAlertEmail: !Not [!Equals [!Ref AlertEmail, '']]
+
 Resources:
   ApiFunction:
     Type: AWS::Serverless::Function
@@ -35,8 +54,9 @@ Resources:
           Api__PublicDocs: !Ref PublicApiDocs
       FunctionUrlConfig:
         # Public: it's a demo API. SAM adds the resource policy that a public
-        # function URL needs. Abuse is bounded by the app's rate limiter and
-        # Lambda's account concurrency limit.
+        # function URL needs. The app's rate limiter slows casual abuse, but a
+        # rejected request is still a billed invocation, so cost is bounded by
+        # Lambda's concurrency limit and the guardrail below.
         AuthType: NONE
       LoggingConfig:
         LogGroup: !Ref ApiLogs
@@ -46,6 +66,82 @@ Resources:
     Properties:
       LogGroupName: /aws/lambda/finance-monitor-api
       RetentionInDays: 14 # logs don't accumulate (or cost) forever
+
+  # --- Cost guardrail -------------------------------------------------------
+  # If the API is called far more than a demo ever would be (a flood of
+  # requests, a script stuck in a loop), an alarm invokes ShutOffFunction,
+  # which sets the API's reserved concurrency to 0. Lambda then rejects every
+  # request without running (or billing) it, until it's re-enabled by hand.
+
+  TrafficAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: finance-monitor-api-traffic-spike
+      AlarmDescription: >
+        API traffic far above demo levels. ShutOffFunction has stopped the API;
+        restore with: aws lambda delete-function-concurrency --function-name finance-monitor-api
+      Namespace: AWS/Lambda
+      MetricName: Invocations # rejected (throttled) requests aren't counted
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ApiFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: !Ref ShutOffThreshold
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching # no traffic is fine
+      AlarmActions:
+        - !GetAtt ShutOffFunction.Arn
+        - !If [HasAlertEmail, !Ref AlertTopic, !Ref AWS::NoValue]
+
+  ShutOffFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: finance-monitor-api-shut-off
+      Runtime: python3.13
+      Handler: handler.handler
+      Architectures: [arm64]
+      CodeUri: kill-switch/
+      MemorySize: 128
+      # A cold start (loading boto3 on 128 MB's small CPU share) took ~6s in
+      # testing. It only runs when the alarm fires, so leave plenty of room.
+      Timeout: 30
+      Environment:
+        Variables:
+          TARGET_FUNCTION: !Ref ApiFunction
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: lambda:PutFunctionConcurrency # this one action, on the API only
+              Resource: !GetAtt ApiFunction.Arn
+      LoggingConfig:
+        LogGroup: !Ref ShutOffLogs
+
+  ShutOffLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/finance-monitor-api-shut-off
+      RetentionInDays: 90 # rarely written, and worth keeping when it is
+
+  AlarmInvokesShutOff:
+    # Lets this one alarm (and nothing else) invoke the shut-off function.
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ShutOffFunction
+      Action: lambda:InvokeFunction
+      Principal: lambda.alarms.cloudwatch.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+      SourceArn: !GetAtt TrafficAlarm.Arn
+
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Condition: HasAlertEmail
+    Properties:
+      TopicName: finance-monitor-api-alerts
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref AlertEmail
 
 Outputs:
   ApiUrl:
