@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Globalization;
 using FinanceMonitoring.Api.Common.Dates;
 using FinanceMonitoring.Api.Common.Endpoints;
 using FinanceMonitoring.Api.Data;
@@ -22,7 +21,7 @@ public static class GetDashboard
     /// <param name="Currency">Display currency (ISO 4217). Amounts are converted from USD at the latest ECB rate.</param>
     public sealed record Request(
         [FromQuery(Name = "month")][property: RegularExpression(Months.Pattern, ErrorMessage = "Use the format yyyy-MM.")] string? Month = null,
-        [FromQuery(Name = "currency")][property: RegularExpression("^[A-Z]{3}$", ErrorMessage = "Use a 3-letter currency code, e.g. EUR.")] string Currency = "USD");
+        [FromQuery(Name = "currency")][property: RegularExpression(DisplayRate.CodePattern, ErrorMessage = DisplayRate.CodeMessage)] string Currency = "USD");
 
     // ── Response ───────────────────────────────────────────────────────────
     /// <param name="Month">The month summarised (yyyy-MM).</param>
@@ -42,13 +41,6 @@ public static class GetDashboard
         int? SavingsRateBasisPoints,
         IReadOnlyList<CategorySpend> ByCategory,
         IReadOnlyList<TrendPoint> Trend);
-
-    /// <param name="Base">Converted from (USD).</param>
-    /// <param name="Quote">Converted to.</param>
-    /// <param name="Rate">Units of quote per one base, as an exact decimal string (never a float).</param>
-    /// <param name="Date">ECB publication date (yyyy-MM-dd).</param>
-    /// <param name="Stale">True when the rate source was unreachable and this is the last good rate.</param>
-    public sealed record RateInfo(string Base, string Quote, string Rate, string Date, bool Stale);
 
     /// <param name="Income">Income, in minor units of the response currency.</param>
     /// <param name="Expenses">Expenses, in minor units of the response currency.</param>
@@ -89,28 +81,10 @@ public static class GetDashboard
             else if (Months.TryParse(request.Month, out var parsed)) month = parsed.Value;
             else return Months.Invalid();
 
-            // ── Resolve the rate first: fail fast before doing any work ─────
-            ExchangeRate? rate = null;
-            if (request.Currency != ExchangeRateService.BaseCurrency)
-            {
-                try
-                {
-                    var supported = await rates.GetCurrenciesAsync(cancellationToken);
-                    if (!supported.ContainsKey(request.Currency))
-                    {
-                        return TypedResults.ValidationProblem(new Dictionary<string, string[]>
-                        {
-                            ["currency"] = [$"{request.Currency} isn't a supported currency."],
-                        });
-                    }
-
-                    rate = await rates.GetUsdRateAsync(request.Currency, cancellationToken);
-                }
-                catch (RatesUnavailableException ex)
-                {
-                    return RatesProblem.Unavailable(ex.Message);
-                }
-            }
+            var lookup = await DisplayRate.ResolveAsync(request.Currency, rates, cancellationToken);
+            if (lookup.Invalid is { } invalid) return invalid;
+            if (lookup.Unavailable is { } unavailable) return unavailable;
+            var rate = lookup.Rate;
 
             // ── Aggregate in USD, in SQL ──────────────────────────────────────
             var trendStart = month.AddMonths(-(TrendMonths - 1));
@@ -160,10 +134,7 @@ public static class GetDashboard
             return TypedResults.Ok(new Response(
                 Months.Format(month),
                 target.Code,
-                rate is null
-                    ? null
-                    : new RateInfo(rate.Base, rate.Quote, rate.Rate.ToString(CultureInfo.InvariantCulture),
-                        rate.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), rate.Stale),
+                rate is null ? null : RateInfo.From(rate),
                 ConvertTotals(current),
                 ConvertTotals(UsdTotals(month.AddMonths(-1))),
                 current.Income == 0 ? null : (int)(current.Net * 10_000 / current.Income),

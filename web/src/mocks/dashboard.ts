@@ -1,4 +1,4 @@
-import type { Dashboard } from '@/api/types'
+import type { Dashboard, RateInfo } from '@/api/types'
 
 /** November 2026 in USD, matching the shapes the API returns. Categories sum to totals.expenses. */
 export function usdDashboard(month = '2026-11'): Dashboard {
@@ -30,13 +30,18 @@ export function usdDashboard(month = '2026-11'): Dashboard {
   }
 }
 
+/** What GET /api/rates/EUR returns: the same rate the EUR dashboard uses. */
+export function eurRate(stale = false): RateInfo {
+  return { base: 'USD', quote: 'EUR', rate: '0.90975', date: '2026-11-19', stale }
+}
+
 /** The same month converted to EUR at 0.90975 (values as the API computes them). */
 export function eurDashboard(month = '2026-11', stale = false): Dashboard {
   const usd = usdDashboard(month)
   return {
     ...usd,
     currency: 'EUR',
-    rate: { base: 'USD', quote: 'EUR', rate: '0.90975', date: '2026-11-19', stale },
+    rate: eurRate(stale),
     totals: { income: 441_229, expenses: 212_696, net: 228_533 },
     previous: { income: 512_440, expenses: 241_276, net: 271_165 },
     byCategory: usd.byCategory.map((c) => ({ ...c, amount: Math.round(c.amount * 0.90975) })),

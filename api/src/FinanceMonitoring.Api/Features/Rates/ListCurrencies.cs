@@ -21,7 +21,7 @@ public static class ListCurrencies
             app.MapGet("/currencies", HandleAsync)
                 .WithName(nameof(ListCurrencies))
                 .WithTags("Rates")
-                .WithSummary("Currencies the dashboard can be displayed in.")
+                .WithSummary("Currencies amounts can be displayed in.")
                 .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
 
         internal static async Task<Results<Ok<Response>, ProblemHttpResult>> HandleAsync(

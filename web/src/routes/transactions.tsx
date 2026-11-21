@@ -1,6 +1,7 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
 import { categoriesQueryOptions } from '@/features/categories/queries'
+import { prefetchDisplayRate } from '@/features/currency/queries'
 import { TransactionsPage } from '@/features/transactions/components/TransactionsPage'
 import { transactionsQueryOptions } from '@/features/transactions/queries'
 import {
@@ -23,6 +24,7 @@ export const Route = createFileRoute('/transactions')({
     // errors are ignored here and surface through the page's useQuery.
     if (!dateRangeError(deps)) void queryClient.query(transactionsQueryOptions(deps)).catch(ignore)
     void queryClient.query(categoriesQueryOptions()).catch(ignore)
+    prefetchDisplayRate(queryClient)
   },
   head: () => ({ meta: [{ title: 'Transactions · Finance Monitor' }] }),
   component: TransactionsPage,

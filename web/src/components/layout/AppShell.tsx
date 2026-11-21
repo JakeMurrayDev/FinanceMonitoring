@@ -2,6 +2,8 @@ import { Link } from '@tanstack/react-router'
 import { LayoutDashboard, PiggyBank, ReceiptText, Wallet } from 'lucide-react'
 import type { ReactNode } from 'react'
 
+import { CurrencyPicker } from '@/features/currency/components/CurrencyPicker'
+
 import { DemoBanner } from './DemoBanner'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -48,7 +50,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             </ul>
           </nav>
 
-          <div className="ml-auto">
+          {/* App-wide settings: they apply to every page, so they live here. */}
+          <div className="ml-auto flex items-center gap-2">
+            <CurrencyPicker />
             <ThemeToggle />
           </div>
         </div>

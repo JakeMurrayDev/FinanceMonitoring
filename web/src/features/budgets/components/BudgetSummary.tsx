@@ -1,10 +1,8 @@
 import { OctagonAlert } from 'lucide-react'
 
 import type { BudgetLine, BudgetTotals } from '@/api/types'
-import { formatMoney, money } from '@/lib/money'
+import { useDisplayMoney } from '@/features/currency/use-display-money'
 import { cn } from '@/lib/utils'
-
-const usd = (minor: number) => formatMoney(money(minor, 'USD'))
 
 export function BudgetSummary({
   totals,
@@ -13,6 +11,7 @@ export function BudgetSummary({
   totals: BudgetTotals
   lines: readonly BudgetLine[]
 }) {
+  const { format } = useDisplayMoney()
   const over = lines.filter((line) => line.status === 'OverBudget')
   const anyBudget = lines.some((line) => line.budget !== null)
   const overspent = totals.remaining < 0
@@ -20,18 +19,18 @@ export function BudgetSummary({
   return (
     <section aria-label="Month summary" className="mb-6 grid gap-4">
       <dl className="grid gap-4 sm:grid-cols-3">
-        <Stat label="Budgeted" value={usd(totals.budgeted)} />
-        <Stat label="Spent" value={usd(totals.spentInBudgeted)} hint="In budgeted categories" />
+        <Stat label="Budgeted" value={format(totals.budgeted)} />
+        <Stat label="Spent" value={format(totals.spentInBudgeted)} hint="In budgeted categories" />
         <Stat
           label={overspent ? 'Over budget' : 'Left to spend'}
-          value={usd(Math.abs(totals.remaining))}
+          value={format(Math.abs(totals.remaining))}
           className={overspent ? 'text-expense' : undefined}
         />
       </dl>
 
       {totals.unbudgeted > 0 && (
         <p className="text-sm text-muted-foreground">
-          Plus {usd(totals.unbudgeted)} spent in categories without a budget.
+          Plus {format(totals.unbudgeted)} spent in categories without a budget.
         </p>
       )}
 

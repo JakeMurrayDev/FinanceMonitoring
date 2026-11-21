@@ -3,16 +3,12 @@ import { useQuery } from '@tanstack/react-query'
 import { NativeSelect } from '@/components/form/NativeSelect'
 import { Label } from '@/components/ui/label'
 
-import { ACCOUNT_CURRENCY } from '../display-currency'
+import { ACCOUNT_CURRENCY, useDisplayCurrency } from '../display-currency'
 import { currenciesQueryOptions } from '../queries'
 
-export function CurrencyPicker({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (code: string) => void
-}) {
+/** In the app header: one setting for every page, remembered across reloads. */
+export function CurrencyPicker() {
+  const [value, setValue] = useDisplayCurrency()
   const currencies = useQuery(currenciesQueryOptions())
   // If the list can't load, still offer USD and keep whatever is selected.
   const options = currencies.data ?? [{ code: ACCOUNT_CURRENCY, name: 'US Dollar' }]
@@ -27,10 +23,10 @@ export function CurrencyPicker({
       </Label>
       <NativeSelect
         id="display-currency"
-        className="w-56"
+        className="w-48"
         value={value}
         onChange={(event) => {
-          onChange(event.target.value)
+          setValue(event.target.value)
         }}
       >
         {withSelected.map((currency) => (

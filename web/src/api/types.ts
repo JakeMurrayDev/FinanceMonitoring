@@ -2,7 +2,7 @@
 export type {
   SchemaGetDashboardCategorySpend as CategorySpend,
   SchemaGetDashboardMonthTotals as MonthTotals,
-  SchemaGetDashboardRateInfo as RateInfo,
+  SchemaRateInfo as RateInfo,
   SchemaGetDashboardResponse as Dashboard,
   SchemaGetDashboardTrendPoint as TrendPoint,
   SchemaListCurrenciesCurrencyItem as CurrencyItem,

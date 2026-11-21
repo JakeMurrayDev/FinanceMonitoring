@@ -283,12 +283,64 @@
         }
       }
     },
+    "/api/rates/{currency}": {
+      "get": {
+        "tags": [
+          "Rates"
+        ],
+        "summary": "The latest USD rate for a display currency.",
+        "operationId": "GetRate",
+        "parameters": [
+          {
+            "name": "currency",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "pattern": "^[A-Z]{3}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateInfo"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HttpValidationProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/currencies": {
       "get": {
         "tags": [
           "Rates"
         ],
-        "summary": "Currencies the dashboard can be displayed in.",
+        "summary": "Currencies amounts can be displayed in.",
         "operationId": "ListCurrencies",
         "responses": {
           "200": {
@@ -873,38 +925,6 @@
           }
         }
       },
-      "GetDashboardRateInfo": {
-        "required": [
-          "base",
-          "quote",
-          "rate",
-          "date",
-          "stale"
-        ],
-        "type": "object",
-        "properties": {
-          "base": {
-            "type": "string",
-            "description": "Converted from (USD)."
-          },
-          "quote": {
-            "type": "string",
-            "description": "Converted to."
-          },
-          "rate": {
-            "type": "string",
-            "description": "Units of quote per one base, as an exact decimal string (never a float)."
-          },
-          "date": {
-            "type": "string",
-            "description": "ECB publication date (yyyy-MM-dd)."
-          },
-          "stale": {
-            "type": "boolean",
-            "description": "True when the rate source was unreachable and this is the last good rate."
-          }
-        }
-      },
       "GetDashboardResponse": {
         "required": [
           "month",
@@ -933,7 +953,7 @@
               },
               {
                 "description": "The rate used, or null when no conversion was needed (USD).",
-                "$ref": "#/components/schemas/GetDashboardRateInfo"
+                "$ref": "#/components/schemas/RateInfo"
               }
             ]
           },
@@ -1192,6 +1212,39 @@
             ]
           }
         }
+      },
+      "RateInfo": {
+        "required": [
+          "base",
+          "quote",
+          "rate",
+          "date",
+          "stale"
+        ],
+        "type": "object",
+        "properties": {
+          "base": {
+            "type": "string",
+            "description": "Converted from (USD)."
+          },
+          "quote": {
+            "type": "string",
+            "description": "Converted to."
+          },
+          "rate": {
+            "type": "string",
+            "description": "Units of quote per one base, as an exact decimal string (never a float)."
+          },
+          "date": {
+            "type": "string",
+            "description": "ECB publication date (yyyy-MM-dd)."
+          },
+          "stale": {
+            "type": "boolean",
+            "description": "True when the rate source was unreachable and this is the last good rate."
+          }
+        },
+        "description": "How amounts were converted: returned on its own and inside the dashboard."
       },
       "SetBudgetRequest": {
         "required": [

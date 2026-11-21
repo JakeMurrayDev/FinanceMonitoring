@@ -1,5 +1,5 @@
 import type { BudgetLine } from '@/api/types'
-import { formatMoney, money } from '@/lib/money'
+import { useDisplayMoney } from '@/features/currency/use-display-money'
 import { cn } from '@/lib/utils'
 
 const BAR_STYLE = {
@@ -11,14 +11,13 @@ const BAR_STYLE = {
   NoBudget: 'bg-muted-foreground',
 } as const
 
-const usd = (minor: number) => formatMoney(money(minor, 'USD'))
-
 /**
  * An accessible progress bar: screen readers hear "$308.41 of $300.00 spent,
  * 102%" rather than a bare number. The value is capped at 100 because
  * aria-valuenow can't exceed aria-valuemax; the text carries the real figure.
  */
 export function BudgetProgress({ line, labelledBy }: { line: BudgetLine; labelledBy: string }) {
+  const { format } = useDisplayMoney()
   if (line.budget === null || line.percentUsed === null) return null
   const width = Math.min(line.percentUsed, 100)
 
@@ -29,7 +28,7 @@ export function BudgetProgress({ line, labelledBy }: { line: BudgetLine; labelle
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={width}
-      aria-valuetext={`${usd(line.spent)} of ${usd(line.budget)} spent, ${String(line.percentUsed)}%`}
+      aria-valuetext={`${format(line.spent)} of ${format(line.budget)} spent, ${String(line.percentUsed)}%`}
       className="h-2.5 overflow-hidden rounded-full bg-muted"
     >
       <div

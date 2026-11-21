@@ -3,15 +3,13 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { BudgetLine } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { formatMoney, money } from '@/lib/money'
+import { useDisplayMoney } from '@/features/currency/use-display-money'
 import { formatMonth } from '@/lib/months'
 import { cn } from '@/lib/utils'
 
 import { BudgetEditor } from './BudgetEditor'
 import { BudgetProgress } from './BudgetProgress'
 import { BudgetStatusLabel } from './BudgetStatusLabel'
-
-const usd = (minor: number) => formatMoney(money(minor, 'USD'))
 
 interface BudgetCardProps {
   line: BudgetLine
@@ -22,6 +20,7 @@ interface BudgetCardProps {
 
 export function BudgetCard({ line, month, onChange }: BudgetCardProps) {
   const titleId = useId()
+  const { format } = useDisplayMoney()
   const [editing, setEditing] = useState(false)
   const actionsRef = useRef<HTMLDivElement>(null)
   // After closing the editor or removing a budget, the focused control
@@ -52,9 +51,9 @@ export function BudgetCard({ line, month, onChange }: BudgetCardProps) {
 
       <CardContent className="grid gap-3">
         <p className="font-mono text-lg tabular-nums">
-          {usd(line.spent)}
+          {format(line.spent)}
           <span className="text-sm text-muted-foreground">
-            {line.budget === null ? ' spent' : ` of ${usd(line.budget)}`}
+            {line.budget === null ? ' spent' : ` of ${format(line.budget)}`}
           </span>
         </p>
 
@@ -68,8 +67,8 @@ export function BudgetCard({ line, month, onChange }: BudgetCardProps) {
             )}
           >
             {line.remaining < 0
-              ? `${usd(-line.remaining)} over budget`
-              : `${usd(line.remaining)} left`}
+              ? `${format(-line.remaining)} over budget`
+              : `${format(line.remaining)} left`}
           </p>
         )}
 

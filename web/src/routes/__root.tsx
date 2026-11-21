@@ -5,12 +5,17 @@ import { Toaster } from 'sonner'
 
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { currenciesQueryOptions } from '@/features/currency/queries'
 
 interface RouterContext {
   queryClient: QueryClient
 }
 
 export const Route = createRootRouteWithContext<RouterContext>()({
+  // The header's currency picker is on every page, so load its list up front.
+  loader: ({ context: { queryClient } }) => {
+    void queryClient.query(currenciesQueryOptions()).catch(() => undefined)
+  },
   head: () => ({ meta: [{ title: 'Finance Monitor' }] }),
   component: RootLayout,
   notFoundComponent: NotFound,

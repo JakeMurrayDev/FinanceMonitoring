@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { categoriesQueryOptions } from '@/features/categories/queries'
+import { DisplayCurrencyNotice } from '@/features/currency/components/RateNotice'
 
 import { useDeleteTransaction, usePendingCreates } from '../mutations'
 import { transactionsQueryOptions } from '../queries'
@@ -105,6 +106,10 @@ export function TransactionsPage() {
         onChange={updateFilters}
         onClear={clearFilters}
       />
+
+      <div className="mb-4 empty:hidden">
+        <DisplayCurrencyNotice note="Transactions are recorded in USD, so new ones are entered in USD." />
+      </div>
 
       {rangeError ? null : transactions.isPending ? (
         <TableSkeleton />

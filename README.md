@@ -20,7 +20,7 @@ A personal finance dashboard: track transactions, set monthly budgets, and see w
 - **Add, edit and delete** in dialogs that are real routes (Back closes them, an edit link can be shared), with **optimistic updates** and rollback.
 - **Budgets:** a monthly limit per category, with progress bars and on-track / near-limit / over-budget status. Budgets are **effective-dated**, so changing one never rewrites past months.
 - **Dashboard:** income, expenses, net and savings rate with month-on-month change, spending by category, and a six-month trend. Every chart has a text summary and a table view.
-- **Multi-currency display:** pick any of 30 currencies; amounts are converted on the server at the latest European Central Bank rate, with the rate and its date shown.
+- **Multi-currency display:** pick any of 30 currencies in the header and every page follows; amounts are converted at the latest European Central Bank rate, with the rate and its date shown.
 - **Accessible:** keyboard navigable, screen-reader labelled, light and dark themes that meet WCAG AA contrast, and never colour alone to convey meaning.
 
 ## Tech stack
@@ -93,7 +93,7 @@ The API creates its SQLite database on first run and seeds about 100 demo transa
 
 **Effective-dated budgets.** A budget row means "from this month onward", and a month uses the latest row starting on or before it. Raising a budget in November leaves September and October judged against the limits that applied then.
 
-**Currency conversion on the server.** The API converts each figure once from its exact USD value and reports the rate and its ECB date. Rates are cached for an hour (they're published once each working day). If the source is down, the last good rate is served and the UI says it's stale; with no rate at all, the dashboard falls back to USD and explains why. Converting each figure independently means categories can differ from the converted total by a cent or two, as on any FX statement, and the UI says so rather than adjusting a real number.
+**Currency conversion: rates from the server, one set of maths.** The dashboard aggregates in SQL, so the API converts its figures and reports the rate and its ECB date. Transactions and budgets stay in USD in the browser, because that's what their forms edit and what optimistic updates calculate with; they're converted only for display, using the rate from `GET /api/rates/{currency}`. Both sides use exact decimal maths with one half-even rounding, and the shared money-conversion fixtures run against both, so a figure converts to the same cent either way. Rates are cached for an hour (they're published once each working day). If the source is down, the last good rate is served and the UI says it's stale; with no rate at all, every page falls back to USD and explains why. Converting each figure independently means parts can differ from a converted total by a cent or two, as on any FX statement, and the UI says so rather than adjusting a real number.
 
 **Accessibility measured, not assumed.**
 - Text colours were measured against WCAG AA (4.5:1) in both themes.
@@ -109,8 +109,8 @@ The API creates its SQLite database on first run and seeds about 100 demo transa
 
 | | |
 | --- | --- |
-| **Web: 290 tests** | Money utilities and parsing; URL schemas; the transaction form (validation messages, focus, submit in cents); URL-driven filtering; optimistic create/edit/delete including rollback and a 409 race; budgets; dashboard; theme; phone layout; axe checks on every page |
-| **API: 165 tests** | Every endpoint through `WebApplicationFactory` against in-memory SQLite and a fixed clock; validation and 409s; month boundaries and effective dating; currency conversion against hand-checked values; the rate cache and its fallbacks (NSubstitute); rate limiting |
+| **Web: 295 tests** | Money utilities and parsing; URL schemas; the transaction form (validation messages, focus, submit in cents); URL-driven filtering; optimistic create/edit/delete including rollback and a 409 race; budgets; dashboard; one display currency across every page, with budgets still edited in USD; theme; phone layout; axe checks on every page |
+| **API: 172 tests** | Every endpoint through `WebApplicationFactory` against in-memory SQLite and a fixed clock; validation and 409s; month boundaries and effective dating; currency conversion against hand-checked values; the rate cache and its fallbacks (NSubstitute); rate limiting |
 
 - **No network in tests.** The front end mocks HTTP at the network level with MSW, so the real client and query code run. The API replaces the exchange-rate source with NSubstitute and canned HTTP responses.
 - **Key tests are mutation-checked.** Breaking the behaviour they guard (removing the debounce, the optimistic update, the USD fallback) makes them fail.

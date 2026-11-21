@@ -4,6 +4,7 @@ import type { BudgetLine } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ACCOUNT_CURRENCY, useDisplayCurrency } from '@/features/currency/display-currency'
 import { money, parseMoney, toDecimalString, type ParseMoneyError } from '@/lib/money'
 import { formatMonth } from '@/lib/months'
 
@@ -24,6 +25,7 @@ interface BudgetEditorProps {
 /** Inline amount editor. Parses with parseMoney (no floats); Escape cancels. */
 export function BudgetEditor({ line, month, onSave, onCancel }: BudgetEditorProps) {
   const id = useId()
+  const [displayCurrency] = useDisplayCurrency()
   const inputRef = useRef<HTMLInputElement>(null)
   const [text, setText] = useState(
     line.budget === null ? '' : toDecimalString(money(line.budget, 'USD')),
@@ -89,6 +91,7 @@ export function BudgetEditor({ line, month, onSave, onCancel }: BudgetEditorProp
       )}
       <p id={`${id}-hint`} className="text-xs text-muted-foreground">
         Applies from {formatMonth(month)} onward. Earlier months keep their budget.
+        {displayCurrency !== ACCOUNT_CURRENCY && ` Budgets are set in ${ACCOUNT_CURRENCY}.`}
       </p>
       <div className="flex gap-2">
         <Button type="submit" size="sm">

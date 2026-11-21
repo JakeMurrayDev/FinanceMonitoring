@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { formatIsoDate } from '@/lib/dates'
 import { cn } from '@/lib/utils'
 
-import { formatSignedAmount } from '../format'
+import { useFormatSignedAmount } from '../format'
 import type { TransactionSearch } from '../search-schema'
 import { RowActions } from './RowActions'
 import { TypeLabel, type PendingRow } from './TransactionsTable'
@@ -44,6 +44,7 @@ export function TransactionCards({
   emptyState,
   onSortChange,
 }: TransactionCardsProps) {
+  const formatSignedAmount = useFormatSignedAmount()
   const current = `${search.sort}:${search.dir}`
   const options = SORT_OPTIONS.some((o) => o.value === current)
     ? SORT_OPTIONS

@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DisplayCurrencyNotice } from '@/features/currency/components/RateNotice'
 import { currentMonth, formatMonth } from '@/lib/months'
 import { cn } from '@/lib/utils'
 
@@ -31,6 +32,10 @@ export function BudgetsPage() {
       />
       <div className="mb-6">
         <MonthNavigator month={month} to="/budgets" />
+      </div>
+
+      <div className="mb-6 empty:hidden">
+        <DisplayCurrencyNotice note="Budgets are set in USD. Each figure is converted separately from its exact USD value, so they may not add up to the cent." />
       </div>
 
       {budgets.isPending ? (

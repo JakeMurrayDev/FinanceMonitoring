@@ -25,7 +25,7 @@ import {
 import { formatIsoDate } from '@/lib/dates'
 import { cn } from '@/lib/utils'
 
-import { formatSignedAmount } from '../format'
+import { SignedAmount } from '../format'
 import { SORT_FIELDS, type TransactionSearch } from '../search-schema'
 import { useMediaQuery } from '@/hooks/use-media-query'
 
@@ -72,7 +72,7 @@ const columns = helper.columns([
           info.row.original.type === 'Income' ? 'text-income' : 'text-expense',
         )}
       >
-        {formatSignedAmount(info.row.original)}
+        <SignedAmount item={info.row.original} />
       </span>
     ),
   }),
@@ -235,7 +235,7 @@ export function TransactionsTable({
                   <TypeLabel type={row.type} />
                 </TableCell>
                 <TableCell className="text-right font-mono whitespace-nowrap tabular-nums">
-                  {formatSignedAmount({ ...row, currency: 'USD' })}
+                  <SignedAmount item={{ ...row, currency: 'USD' }} />
                 </TableCell>
                 <TableCell className="text-right text-xs whitespace-nowrap">
                   <span className="inline-flex items-center gap-1">

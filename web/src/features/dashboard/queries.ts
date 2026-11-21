@@ -14,11 +14,3 @@ export function dashboardQueryOptions(month: string, currency: string) {
       unwrap(await api.GET('/api/dashboard', { params: { query: { month, currency } }, signal })),
   })
 }
-
-export function currenciesQueryOptions() {
-  return queryOptions({
-    queryKey: ['currencies'],
-    queryFn: async ({ signal }) => unwrap(await api.GET('/api/currencies', { signal })).currencies,
-    staleTime: 60 * 60 * 1000,
-  })
-}

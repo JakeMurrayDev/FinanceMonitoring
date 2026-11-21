@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { formatIsoDate } from '@/lib/dates'
 
-import { formatSignedAmount } from '../format'
+import { useFormatSignedAmount } from '../format'
 
 interface DeleteTransactionDialogProps {
   transaction: TransactionItem | null
@@ -25,6 +25,7 @@ export function DeleteTransactionDialog({
   onConfirm,
   onCancel,
 }: DeleteTransactionDialogProps) {
+  const formatSignedAmount = useFormatSignedAmount()
   return (
     <AlertDialog
       open={transaction !== null}

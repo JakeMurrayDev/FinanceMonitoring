@@ -73,6 +73,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rates/{currency}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The latest USD rate for a display currency. */
+        get: operations["GetRate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/currencies": {
         parameters: {
             query?: never;
@@ -80,7 +97,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Currencies the dashboard can be displayed in. */
+        /** Currencies amounts can be displayed in. */
         get: operations["ListCurrencies"];
         put?: never;
         post?: never;
@@ -253,24 +270,12 @@ export interface components {
              */
             net: number;
         };
-        GetDashboardRateInfo: {
-            /** @description Converted from (USD). */
-            base: string;
-            /** @description Converted to. */
-            quote: string;
-            /** @description Units of quote per one base, as an exact decimal string (never a float). */
-            rate: string;
-            /** @description ECB publication date (yyyy-MM-dd). */
-            date: string;
-            /** @description True when the rate source was unreachable and this is the last good rate. */
-            stale: boolean;
-        };
         GetDashboardResponse: {
             /** @description The month summarised (yyyy-MM). */
             month: string;
             /** @description Currency of every amount in this response. */
             currency: string;
-            rate: null | components["schemas"]["GetDashboardRateInfo"];
+            rate: null | components["schemas"]["RateInfo"];
             /** @description This month's income, expenses and net. */
             totals: components["schemas"]["GetDashboardMonthTotals"];
             /** @description The previous month's totals, for comparison. */
@@ -368,6 +373,19 @@ export interface components {
             detail?: null | string;
             instance?: null | string;
         };
+        /** @description How amounts were converted: returned on its own and inside the dashboard. */
+        RateInfo: {
+            /** @description Converted from (USD). */
+            base: string;
+            /** @description Converted to. */
+            quote: string;
+            /** @description Units of quote per one base, as an exact decimal string (never a float). */
+            rate: string;
+            /** @description ECB publication date (yyyy-MM-dd). */
+            date: string;
+            /** @description True when the rate source was unreachable and this is the last good rate. */
+            stale: boolean;
+        };
         SetBudgetRequest: {
             /** @description First month the budget applies to (yyyy-MM). Earlier months are unaffected. */
             month: string;
@@ -458,7 +476,6 @@ export type SchemaGetBudgetsBudgetTotals = components['schemas']['GetBudgetsBudg
 export type SchemaGetBudgetsResponse = components['schemas']['GetBudgetsResponse'];
 export type SchemaGetDashboardCategorySpend = components['schemas']['GetDashboardCategorySpend'];
 export type SchemaGetDashboardMonthTotals = components['schemas']['GetDashboardMonthTotals'];
-export type SchemaGetDashboardRateInfo = components['schemas']['GetDashboardRateInfo'];
 export type SchemaGetDashboardResponse = components['schemas']['GetDashboardResponse'];
 export type SchemaGetDashboardTrendPoint = components['schemas']['GetDashboardTrendPoint'];
 export type SchemaHttpValidationProblemDetails = components['schemas']['HttpValidationProblemDetails'];
@@ -469,6 +486,7 @@ export type SchemaListCurrenciesResponse = components['schemas']['ListCurrencies
 export type SchemaListTransactionsSortField = components['schemas']['ListTransactionsSortField'];
 export type SchemaPagedResponseOfTransactionResponse = components['schemas']['PagedResponseOfTransactionResponse'];
 export type SchemaProblemDetails = components['schemas']['ProblemDetails'];
+export type SchemaRateInfo = components['schemas']['RateInfo'];
 export type SchemaSetBudgetRequest = components['schemas']['SetBudgetRequest'];
 export type SchemaSortDirection = components['schemas']['SortDirection'];
 export type SchemaTransactionResponse = components['schemas']['TransactionResponse'];
@@ -653,6 +671,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GetDashboardResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetRate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                currency: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RateInfo"];
                 };
             };
             /** @description Bad Request */
